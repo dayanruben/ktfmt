@@ -32,6 +32,67 @@ import org.junit.runners.JUnit4
 class FormatterTest {
 
   @Test
+  fun `long ordinary string literal is split`() =
+      assertThatFormatting(
+              """
+              |fun f(): String {
+              |  return "The quick brown fox jumps over the lazy dog while carrying a very long string literal"
+              |}
+              |"""
+                  .trimMargin()
+          )
+          .withOptions(META_FORMAT.copy(maxWidth = 40))
+          .isEqualTo(
+              """
+              |fun f(): String {
+              |  return "The quick brown fox jumps over " +
+              |      "the lazy dog while carrying a " +
+              |      "very long string literal"
+              |}
+              |"""
+                  .trimMargin()
+          )
+
+  @Test
+  fun `long ordinary string literal in getter is split`() =
+      assertThatFormatting(
+              """
+              |class Foo {
+              |  val value: String
+              |    get() = "The quick brown fox jumps over the lazy dog while carrying a very long string literal"
+              |}
+              |"""
+                  .trimMargin()
+          )
+          .withOptions(META_FORMAT.copy(maxWidth = 40))
+          .isEqualTo(
+              """
+              |class Foo {
+              |  val value: String
+              |    get() =
+              |        "The quick brown fox jumps over " +
+              |            "the lazy dog while carrying a " +
+              |            "very long string literal"
+              |}
+              |"""
+                  .trimMargin()
+          )
+
+  @Test
+  fun `long unsafe string literals are not split`() =
+      assertFormatted(
+          """
+          |fun f(name: String): List<String> =
+          |    listOf(
+          |        "The quick brown fox jumps over ${'$'}name while carrying a very long string literal",
+          |        "The quick brown fox jumps over \"the lazy dog\" while carrying a very long string literal",
+          |        ""${'"'}The quick brown fox jumps over the lazy dog while carrying a very long string literal""${'"'},
+          |    )
+          |"""
+              .trimMargin()
+      )
+
+  @Test
   fun `support script (kts) files`() =
       assertFormatted(
           """

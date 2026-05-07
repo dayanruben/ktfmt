@@ -103,6 +103,7 @@ object Formatter {
         .let { sortedAndDistinctImports(it) }
         .let { dropRedundantElements(it, options) }
         .let { addRedundantElements(it, options) }
+        .let { LongStringLiteralFormatter(options.maxWidth, options.continuationIndent).format(it) }
         .let { prettyPrint(it, options, lineSeparator = "\n") }
         .let { addRedundantElements(it, options) }
         .let { MultilineStringFormatter(options.continuationIndent).format(it) }

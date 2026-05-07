@@ -156,7 +156,8 @@ publishing {
       pom {
         name = "Ktfmt"
         description =
-            "A program that reformats Kotlin source code to comply with the common community standard for Kotlin code conventions."
+            "A program that reformats Kotlin source code to comply with the common community standard " +
+                "for Kotlin code conventions."
         url = "https://github.com/facebook/ktfmt"
         inceptionYear = "2019"
         developers { developer { name = "Facebook" } }
