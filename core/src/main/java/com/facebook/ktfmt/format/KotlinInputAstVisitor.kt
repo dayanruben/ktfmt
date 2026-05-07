@@ -2086,9 +2086,18 @@ class KotlinInputAstVisitor(
       if (enumEntryList != null) {
         builder.block(ZERO) {
           builder.breakOp(Doc.FillMode.UNIFIED, "", ZERO)
-          for (value in enumEntryList.enumEntries) {
+          val addTrailingCommaBeforeSemicolon =
+              options.manageTrailingCommas &&
+                  members.isNotEmpty() &&
+                  enumEntryList.enumEntries.size > 1
+          for ((index, value) in enumEntryList.enumEntries.withIndex()) {
             visit(value)
             if (builder.peekToken().getOrNull() == ",") {
+              builder.token(",")
+              builder.forcedBreak()
+            } else if (
+                addTrailingCommaBeforeSemicolon && index == enumEntryList.enumEntries.lastIndex
+            ) {
               builder.token(",")
               builder.forcedBreak()
             }

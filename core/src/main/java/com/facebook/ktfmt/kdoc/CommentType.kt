@@ -42,7 +42,8 @@ enum class CommentType(
 ) {
   KDOC("/**", "*/", " * "),
   BLOCK("/*", "*/", ""),
-  LINE("//", "", "// ");
+  LINE("//", "", "// "),
+  ;
 
   /**
    * The number of characters needed to fit a comment on a line: the prefix, suffix and a single

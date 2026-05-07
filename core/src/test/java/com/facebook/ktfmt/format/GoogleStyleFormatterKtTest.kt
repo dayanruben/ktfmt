@@ -1885,14 +1885,16 @@ class GoogleStyleFormatterKtTest {
         |
         |enum class F {
         |  Z,
-        |  Y; // Comment
+        |  Y,
+        |  ; // Comment
         |
         |  val x = 0
         |}
         |
         |enum class G {
         |  Z,
-        |  Y; // Comment
+        |  Y,
+        |  ; // Comment
         |
         |  val x = 0
         |}

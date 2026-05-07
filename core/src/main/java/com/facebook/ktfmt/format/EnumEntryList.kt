@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtEnumEntry
+import org.jetbrains.kotlin.psi.psiUtil.getNextSiblingIgnoringWhitespaceAndComments
 import org.jetbrains.kotlin.psi.psiUtil.getPrevSiblingIgnoringWhitespaceAndComments
 
 /**
@@ -60,12 +61,12 @@ private constructor(
 
       var semicolon: PsiElement? = null
       var comma: PsiElement? = null
+      val lastEnumEntry = enumEntries.last()
       val lastToken =
           checkNotNull(
-              enumEntries
-                  .last()
-                  .lastChild
-                  .getPrevSiblingIgnoringWhitespaceAndComments(withItself = true),
+              lastEnumEntry.lastChild.getPrevSiblingIgnoringWhitespaceAndComments(
+                  withItself = true
+              ),
           )
       when (lastToken.text) {
         "," -> {
@@ -78,6 +79,15 @@ private constructor(
             comma = prevSibling
           }
         }
+      }
+
+      var nextSibling = lastEnumEntry.getNextSiblingIgnoringWhitespaceAndComments()
+      if (nextSibling?.text == ",") {
+        comma = nextSibling
+        nextSibling = nextSibling.getNextSiblingIgnoringWhitespaceAndComments()
+      }
+      if (nextSibling?.text == ";") {
+        semicolon = nextSibling
       }
 
       return EnumEntryList(

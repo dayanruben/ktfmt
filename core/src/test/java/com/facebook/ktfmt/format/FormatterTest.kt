@@ -5794,6 +5794,38 @@ class FormatterTest {
       )
 
   @Test
+  fun `trailing comma is added before required enum semicolon`() {
+    assertThatFormatting(
+            """
+            |enum class Values {
+            |  ONE,
+            |  TWO {
+            |    override fun run() {}
+            |  };
+            |
+            |  abstract fun run()
+            |}
+            |"""
+                .trimMargin()
+        )
+        .withOptions(META_FORMAT)
+        .isEqualTo(
+            """
+            |enum class Values {
+            |  ONE,
+            |  TWO {
+            |    override fun run() {}
+            |  },
+            |  ;
+            |
+            |  abstract fun run()
+            |}
+            |"""
+                .trimMargin()
+        )
+  }
+
+  @Test
   fun `semicolon is removed from empty enum`() {
     val code =
         """

@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeParameterList
 import org.jetbrains.kotlin.psi.KtValueArgumentList
 import org.jetbrains.kotlin.psi.KtWhenEntry
+import org.jetbrains.kotlin.psi.psiUtil.getPrevSiblingIgnoringWhitespaceAndComments
 
 /** Detects trailing commas or elements that should have trailing commas. */
 object TrailingCommas {
@@ -90,11 +91,7 @@ object TrailingCommas {
           }
         }
         is KtClassBody -> {
-          EnumEntryList.extractChildList(element)?.also {
-            if (it.terminatingSemicolon != null) {
-              return // Never add a trailing comma after there is already a terminating semicolon
-            }
-          }
+          EnumEntryList.extractChildList(element) ?: return
         }
       }
 
@@ -106,11 +103,17 @@ object TrailingCommas {
         return // Never insert a comma if there already is one somehow
       }
 
-      suggestionElements.add(list.items.last().leftLeafIgnoringCommentsAndWhitespace())
+      suggestionElements.add(
+          list.insertionAnchor ?: list.items.last().leftLeafIgnoringCommentsAndWhitespace()
+      )
     }
   }
 
-  private class ManagedList(val items: List<KtElement>, val trailingComma: PsiElement?)
+  private class ManagedList(
+      val items: List<KtElement>,
+      val trailingComma: PsiElement?,
+      val insertionAnchor: PsiElement? = null,
+  )
 
   private fun extractManagedList(element: PsiElement): ManagedList? {
     return when (element) {
@@ -124,16 +127,25 @@ object TrailingCommas {
       is KtWhenEntry -> ManagedList(element.conditions.toList(), element.trailingComma)
       is KtEnumEntry -> {
         EnumEntryList.extractParentList(element).let {
-          ManagedList(it.enumEntries, it.trailingComma)
+          ManagedList(it.enumEntries, it.trailingComma, it.trailingCommaInsertionAnchor())
         }
       }
       is KtClassBody -> {
         EnumEntryList.extractChildList(element)?.let {
-          ManagedList(it.enumEntries, it.trailingComma)
+          ManagedList(it.enumEntries, it.trailingComma, it.trailingCommaInsertionAnchor())
         }
       }
       else -> null
     }
+  }
+
+  private fun EnumEntryList.trailingCommaInsertionAnchor(): PsiElement? {
+    if (trailingComma != null) {
+      return null
+    }
+    return terminatingSemicolon
+        ?.getPrevSiblingIgnoringWhitespaceAndComments()
+        ?.leftLeafIgnoringCommentsAndWhitespace()
   }
 
   /**
