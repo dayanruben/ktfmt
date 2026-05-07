@@ -164,6 +164,8 @@ class KotlinInputAstVisitor(
   /** Tracks whether we are handling an import directive */
   private var inImport = false
 
+  private var preserveSingleTypeArgumentListsDepth = 0
+
   /** Example: `fun foo(n: Int) { println(n) }` */
   override fun visitNamedFunction(function: KtNamedFunction) {
     builder.sync(function)
@@ -238,7 +240,14 @@ class KotlinInputAstVisitor(
     visit(type.referenceExpression)
     val typeArgumentList = type.typeArgumentList
     if (typeArgumentList != null) {
-      builder.block(expressionBreakIndent) { visit(typeArgumentList) }
+      if (
+          preserveSingleTypeArgumentListsDepth > 0 &&
+              typeArgumentList.canPreserveSingleTypeArgumentList()
+      ) {
+        visitSingleTypeArgumentList(typeArgumentList)
+      } else {
+        builder.block(expressionBreakIndent) { visit(typeArgumentList) }
+      }
     }
   }
 
@@ -571,6 +580,9 @@ class KotlinInputAstVisitor(
                   argumentsIndent = Indent.If.make(nameTag, expressionBreakIndent, argsIndentElse),
                   lambdaIndent = Indent.If.make(nameTag, ZERO, lambdaIndentElse),
                   negativeLambdaIndent = Indent.If.make(nameTag, ZERO, negativeLambdaIndentElse),
+                  preserveSingleTypeArgument =
+                      selectorExpression.valueArgumentList != null &&
+                          selectorExpression.lambdaArguments.isEmpty(),
               )
             }
           }
@@ -767,6 +779,7 @@ class KotlinInputAstVisitor(
       argumentsIndent: Indent = expressionBreakIndent,
       lambdaIndent: Indent = ZERO,
       negativeLambdaIndent: Indent = ZERO,
+      preserveSingleTypeArgument: Boolean = false,
   ) {
     // Apply the lambda indent to the callee, type args, value args, and the lambda.
     // This is undone for the first three by the negative lambda indent.
@@ -780,7 +793,17 @@ class KotlinInputAstVisitor(
       builder.block(negativeLambdaIndent) {
         visit(callee)
         builder.block(argumentsIndent) {
-          builder.block(ZERO) { visit(typeArgumentList) }
+          builder.block(ZERO) {
+            if (
+                preserveSingleTypeArgument &&
+                    typeArgumentList != null &&
+                    typeArgumentList.canPreserveSingleTypeArgumentList()
+            ) {
+              visitSingleTypeArgumentList(typeArgumentList)
+            } else {
+              visit(typeArgumentList)
+            }
+          }
           if (argumentList != null) {
             brokeBeforeBrace = visitValueArgumentListInternal(argumentList)
           }
@@ -799,6 +822,21 @@ class KotlinInputAstVisitor(
         else -> throw ParseError("Maximum one trailing lambda is allowed", lambdaArguments[1])
       }
     }
+  }
+
+  private fun KtTypeArgumentList.canPreserveSingleTypeArgumentList(): Boolean =
+      arguments.size == 1 && trailingComma == null
+
+  private fun visitSingleTypeArgumentList(typeArgumentList: KtTypeArgumentList) {
+    builder.sync(typeArgumentList)
+    builder.token("<")
+    preserveSingleTypeArgumentListsDepth++
+    try {
+      visit(typeArgumentList.arguments.single())
+    } finally {
+      preserveSingleTypeArgumentListsDepth--
+    }
+    builder.token(">")
   }
 
   /** Example (`1, "hi"`) in a function call */

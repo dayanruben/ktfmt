@@ -107,6 +107,58 @@ class FormatterTest {
       )
 
   @Test
+  fun `qualified call with nested type argument breaks before selector`() {
+    val code =
+        """
+        |fun f() {
+        |  val adapter = screenRobot.theRecyclerViewForTheVeryLongListWithExtraQualifier.adapter.shouldBeTypeOf<ListAdapter<GroupieViewHolder>>()
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun f() {
+        |  val adapter =
+        |      screenRobot.theRecyclerViewForTheVeryLongListWithExtraQualifier
+        |          .adapter
+        |          .shouldBeTypeOf<ListAdapter<GroupieViewHolder>>()
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 70))
+        .isEqualTo(expected)
+  }
+
+  @Test
+  fun `qualified call with nested type argument and value argument breaks before selector`() {
+    val code =
+        """
+        |fun f() {
+        |  val adapter = screenRobot.theRecyclerViewForTheVeryLongListWithExtraQualifier.adapter.shouldBeTypeOf<ListAdapter<GroupieViewHolder>>(subject)
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun f() {
+        |  val adapter =
+        |      screenRobot.theRecyclerViewForTheVeryLongListWithExtraQualifier
+        |          .adapter
+        |          .shouldBeTypeOf<ListAdapter<GroupieViewHolder>>(subject)
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 70))
+        .isEqualTo(expected)
+  }
+
+  @Test
   fun `line breaks in function arguments`() =
       assertFormatted(
           """
