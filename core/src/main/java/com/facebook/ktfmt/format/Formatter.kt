@@ -22,7 +22,6 @@ import com.facebook.ktfmt.format.RedundantElementManager.dropRedundantElements
 import com.facebook.ktfmt.format.WhitespaceTombstones.indexOfWhitespaceTombstone
 import com.facebook.ktfmt.kdoc.Escaping
 import com.facebook.ktfmt.kdoc.KDocCommentsHelper
-import com.google.common.collect.ImmutableList
 import com.google.common.collect.Range
 import com.google.googlejavaformat.Doc
 import com.google.googlejavaformat.DocBuilder
@@ -90,12 +89,7 @@ object Formatter {
   @JvmStatic
   @Throws(FormatterException::class, ParseError::class)
   fun format(options: FormattingOptions, code: String): String {
-    val (shebang, kotlinCode) =
-        if (code.startsWith("#!")) {
-          code.split("\n".toRegex(), limit = 2)
-        } else {
-          listOf("", code)
-        }
+    val (shebang, kotlinCode) = splitShebang(code)
     checkEscapeSequences(kotlinCode)
 
     return kotlinCode
@@ -110,8 +104,29 @@ object Formatter {
         .let { if (shebang.isEmpty()) it else shebang + "\n" + it }
   }
 
+  /**
+   * format formats the Kotlin code in 'code', applying only replacements that intersect the given
+   * character ranges.
+   */
+  @JvmStatic
+  @Throws(FormatterException::class, ParseError::class)
+  fun format(
+      options: FormattingOptions,
+      code: String,
+      characterRanges: Collection<Range<Int>>,
+  ): String {
+    if (characterRanges.isEmpty()) {
+      return code
+    }
+    return applyIntersectingLineReplacements(code, format(options, code), characterRanges)
+  }
+
   /** prettyPrint reflows 'code' using google-java-format's engine. */
-  private fun prettyPrint(code: String, options: FormattingOptions, lineSeparator: String): String {
+  private fun prettyPrint(
+      code: String,
+      options: FormattingOptions,
+      lineSeparator: String,
+  ): String {
     val file = Parser.parse(code)
     val kotlinInput = KotlinInput(code, file)
     val javaOutput =
@@ -130,11 +145,132 @@ object Formatter {
     javaOutput.flush()
 
     val tokenRangeSet =
-        kotlinInput.characterRangesToTokenRanges(ImmutableList.of(Range.closedOpen(0, code.length)))
+        kotlinInput.characterRangesToTokenRanges(listOf(Range.closedOpen(0, code.length)))
     return WhitespaceTombstones.replaceTombstoneWithTrailingWhitespace(
         JavaOutput.applyReplacements(code, javaOutput.getFormatReplacements(tokenRangeSet))
     )
   }
+
+  private fun splitShebang(code: String): Pair<String, String> =
+      if (code.startsWith("#!")) {
+        code.split("\n".toRegex(), limit = 2).let { it[0] to it[1] }
+      } else {
+        "" to code
+      }
+
+  private fun applyIntersectingLineReplacements(
+      original: String,
+      formatted: String,
+      characterRanges: Collection<Range<Int>>,
+  ): String {
+    val originalLines = original.toLinesWithOffsets()
+    val formattedLines = formatted.toLinesWithOffsets()
+    val replacements = mutableListOf<LineReplacement>()
+    val lcs = buildLcsTable(originalLines, formattedLines)
+    var originalIndex = 0
+    var formattedIndex = 0
+    while (originalIndex < originalLines.size || formattedIndex < formattedLines.size) {
+      if (
+          originalIndex < originalLines.size &&
+              formattedIndex < formattedLines.size &&
+              originalLines[originalIndex].text == formattedLines[formattedIndex].text
+      ) {
+        originalIndex++
+        formattedIndex++
+        continue
+      }
+
+      val originalStart = originalIndex
+      val formattedStart = formattedIndex
+      while (
+          (originalIndex < originalLines.size || formattedIndex < formattedLines.size) &&
+              !(originalIndex < originalLines.size &&
+                  formattedIndex < formattedLines.size &&
+                  originalLines[originalIndex].text == formattedLines[formattedIndex].text)
+      ) {
+        if (
+            formattedIndex == formattedLines.size ||
+                originalIndex < originalLines.size &&
+                    lcs[originalIndex + 1][formattedIndex] >= lcs[originalIndex][formattedIndex + 1]
+        ) {
+          originalIndex++
+        } else {
+          formattedIndex++
+        }
+      }
+      val startOffset = originalLines.getOrNull(originalStart)?.startOffset ?: original.length
+      val endOffset =
+          originalLines.getOrNull(originalIndex - 1)?.endOffset
+              ?: originalLines.getOrNull(originalStart)?.startOffset
+              ?: original.length
+      if (characterRanges.any { it.intersects(startOffset, endOffset) }) {
+        replacements.add(
+            LineReplacement(
+                startOffset,
+                endOffset,
+                formattedLines.subList(formattedStart, formattedIndex).joinToString("") { it.text },
+            )
+        )
+      }
+    }
+
+    return replacements.asReversed().fold(original) { text, replacement ->
+      text.replaceRange(replacement.startOffset, replacement.endOffset, replacement.text)
+    }
+  }
+
+  private fun buildLcsTable(
+      originalLines: List<LineWithOffset>,
+      formattedLines: List<LineWithOffset>,
+  ): Array<IntArray> {
+    val lcs = Array(originalLines.size + 1) { IntArray(formattedLines.size + 1) }
+    for (originalIndex in originalLines.indices.reversed()) {
+      for (formattedIndex in formattedLines.indices.reversed()) {
+        lcs[originalIndex][formattedIndex] =
+            if (originalLines[originalIndex].text == formattedLines[formattedIndex].text) {
+              lcs[originalIndex + 1][formattedIndex + 1] + 1
+            } else {
+              maxOf(lcs[originalIndex + 1][formattedIndex], lcs[originalIndex][formattedIndex + 1])
+            }
+      }
+    }
+    return lcs
+  }
+
+  private fun String.toLinesWithOffsets(): List<LineWithOffset> {
+    val lines = mutableListOf<LineWithOffset>()
+    var startOffset = 0
+    forEachIndexed { index, char ->
+      if (char == '\n') {
+        lines.add(LineWithOffset(substring(startOffset, index + 1), startOffset, index + 1))
+        startOffset = index + 1
+      }
+    }
+    if (startOffset < length) {
+      lines.add(LineWithOffset(substring(startOffset), startOffset, length))
+    }
+    return lines
+  }
+
+  private fun Range<Int>.intersects(startOffset: Int, endOffset: Int): Boolean =
+      if (startOffset == endOffset) {
+        contains(startOffset)
+      } else {
+        val replacementRange = Range.closedOpen(startOffset, endOffset)
+        isConnected(replacementRange) && !intersection(replacementRange).isEmpty
+      }
+
+  private data class LineWithOffset(
+      val text: String,
+      val startOffset: Int,
+      val endOffset: Int,
+  )
+
+  private data class LineReplacement(
+      val startOffset: Int,
+      val endOffset: Int,
+      val text: String,
+  )
 
   private fun createAstVisitor(options: FormattingOptions, builder: OpsBuilder): PsiElementVisitor {
     if (KotlinVersion.CURRENT < MINIMUM_KOTLIN_VERSION) {

@@ -20,6 +20,7 @@ import com.facebook.ktfmt.format.Formatter.META_FORMAT
 import com.facebook.ktfmt.testutil.assertFormatted
 import com.facebook.ktfmt.testutil.assertThatFormatting
 import com.facebook.ktfmt.testutil.defaultTestFormattingOptions
+import com.google.common.collect.Range
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.fail
 import org.junit.BeforeClass
@@ -65,6 +66,50 @@ class FormatterTest {
           |"""
               .trimMargin()
       )
+
+  @Test
+  fun `format only requested character range`() {
+    val code =
+        """
+        |private fun MyComposeFunction() {
+        |    Function(
+        |        modifier =
+        |        Modifier
+        |            .padding(vertical = someVerticalPadding())
+        |            .padding(vertical = someVerticalPadding())
+        |    )
+        |}
+        |
+        |fun untouched  ( value : String ) = value
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |private fun MyComposeFunction() {
+        |  Function(
+        |      modifier =
+        |          Modifier.padding(vertical = someVerticalPadding())
+        |              .padding(vertical = someVerticalPadding())
+        |  )
+        |}
+        |
+        |fun untouched  ( value : String ) = value
+        |"""
+            .trimMargin()
+
+    val startOffset = code.indexOf("Modifier")
+    val endOffset = code.indexOf("    )")
+
+    assertThat(
+            Formatter.format(
+                META_FORMAT,
+                code,
+                listOf(Range.closedOpen(startOffset, endOffset)),
+            )
+        )
+        .isEqualTo(expected)
+  }
 
   @Test
   fun `call chains`() =

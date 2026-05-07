@@ -18,6 +18,7 @@ package com.facebook.ktfmt.intellij
 
 import com.facebook.ktfmt.format.Formatter.format
 import com.facebook.ktfmt.format.FormattingOptions
+import com.google.common.collect.Range
 import com.google.googlejavaformat.java.FormatterException
 import com.intellij.formatting.service.AsyncDocumentFormattingService
 import com.intellij.formatting.service.AsyncFormattingRequest
@@ -47,7 +48,7 @@ class KtfmtFormattingService : AsyncDocumentFormattingService() {
 
   override fun getName(): String = "ktfmt"
 
-  override fun getFeatures(): Set<Feature> = emptySet()
+  override fun getFeatures(): Set<Feature> = setOf(Feature.FORMAT_FRAGMENTS)
 
   override fun canFormat(file: PsiFile): Boolean =
       KotlinFileType.INSTANCE.name == file.fileType.name &&
@@ -59,7 +60,12 @@ class KtfmtFormattingService : AsyncDocumentFormattingService() {
   ) : FormattingTask {
     override fun run() {
       try {
-        val formattedText = format(formattingOptions, request.documentText)
+        val formattedText =
+            format(
+                formattingOptions,
+                request.documentText,
+                request.formattingRanges.toKtfmtRanges(),
+            )
         request.onTextReady(formattedText)
       } catch (e: FormatterException) {
         request.onError(
@@ -73,4 +79,8 @@ class KtfmtFormattingService : AsyncDocumentFormattingService() {
 
     override fun cancel(): Boolean = false
   }
+}
+
+private fun List<com.intellij.openapi.util.TextRange>.toKtfmtRanges(): List<Range<Int>> = map {
+  Range.closedOpen(it.startOffset, it.endOffset)
 }
