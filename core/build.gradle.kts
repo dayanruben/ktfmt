@@ -15,10 +15,12 @@
  */
 
 import kotlin.io.path.writeText
+import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.jetbrains.intellij.platform.gradle.utils.asPath
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
 plugins {
+  application
   kotlin("jvm")
   id("com.gradleup.shadow")
   id("com.ncorti.ktfmt.gradle")
@@ -94,6 +96,47 @@ tasks {
   // Add main class to jar manifest
   withType(Jar::class) { manifest { attributes["Main-Class"] = "com.facebook.ktfmt.cli.Main" } }
 
+  named<CreateStartScripts>("startScripts") {
+    doLast {
+      val unixJvmArgBlock =
+          """
+
+          # The Kotlin compiler currently pulls IntelliJ classes that call
+          # sun.misc.Unsafe::objectFieldOffset. Newer JDKs warn unless this
+          # launcher option is provided, but older JDKs reject the option.
+          ktfmt_java_version=$("${'$'}JAVACMD" -version 2>&1)
+          ktfmt_java_major=$(printf '%s\n' "${'$'}ktfmt_java_version" | sed -n 's/.* version "\([0-9][0-9]*\).*/\1/p' | head -n 1)
+          if [ -n "${'$'}ktfmt_java_major" ] && [ "${'$'}ktfmt_java_major" -ge 23 ]; then
+              DEFAULT_JVM_OPTS="${'$'}DEFAULT_JVM_OPTS \"--sun-misc-unsafe-memory-access=allow\""
+          fi
+          """
+              .trimIndent()
+
+      unixScript.writeText(
+          unixScript.readText().replace("\neval \"set -- ", "\n$unixJvmArgBlock\n\neval \"set -- ")
+      )
+
+      val windowsJvmArgBlock =
+          """
+
+          @rem The Kotlin compiler currently pulls IntelliJ classes that call
+          @rem sun.misc.Unsafe::objectFieldOffset. Newer JDKs warn unless this
+          @rem launcher option is provided, but older JDKs reject the option.
+          for /f "tokens=3" %%v in ('"%JAVA_EXE%" -version 2^>^&1 ^| findstr /i "version"') do set ktfmt_java_version=%%v
+          set ktfmt_java_major=%ktfmt_java_version:"=%
+          for /f "tokens=1 delims=." %%v in ("%ktfmt_java_major%") do set ktfmt_java_major=%%v
+          if defined ktfmt_java_major if %ktfmt_java_major% GEQ 23 set DEFAULT_JVM_OPTS=%DEFAULT_JVM_OPTS% "--sun-misc-unsafe-memory-access=allow"
+          """
+              .trimIndent()
+
+      windowsScript.writeText(
+          windowsScript
+              .readText()
+              .replace("\r\n:execute\r\n", "\r\n:execute\r\n$windowsJvmArgBlock\r\n")
+      )
+    }
+  }
+
   // Sources
   register("sourcesJar", Jar::class) {
     archiveClassifier.set("sources")
@@ -115,6 +158,8 @@ tasks {
     failOnDuplicateEntries = true
   }
 }
+
+application { mainClass.set("com.facebook.ktfmt.cli.Main") }
 
 kotlin {
   @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }

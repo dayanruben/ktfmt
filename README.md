@@ -75,6 +75,14 @@ $ brew install ktfmt
 $ java -jar /path/to/ktfmt-<VERSION>-with-dependencies.jar [--kotlinlang-style | --google-style] [files...]
 ```
 
+On JDK 23 and newer, the Kotlin compiler embedded by ktfmt can emit warnings about terminally deprecated
+`sun.misc.Unsafe` access. Use the release `.zip` or `.tar` distribution's `bin/ktfmt` launcher to add the
+required JVM option automatically. If you run the jar directly, pass the JVM option yourself:
+
+```
+$ java --sun-misc-unsafe-memory-access=allow -jar /path/to/ktfmt-<VERSION>-with-dependencies.jar [files...]
+```
+
 `--kotlinlang-style` makes `ktfmt` use a block indent of 4 spaces instead of 2.
 See below for details.
 
@@ -165,6 +173,8 @@ Choose "Open as a Project".
 
 * Run `./gradlew :ktfmt:shadowJar`
 * Run `java -jar core/build/libs/ktfmt-<VERSION>-with-dependencies.jar`
+* To build a launcher distribution, run `./gradlew :ktfmt:installDist` and then
+  `core/build/install/ktfmt/bin/ktfmt`
 
 ### Releasing
 
