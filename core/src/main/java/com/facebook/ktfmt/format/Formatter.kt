@@ -101,6 +101,7 @@ object Formatter {
     return kotlinCode
         .let { convertLineSeparators(it) }
         .let { sortedAndDistinctImports(it) }
+        .let { ModifierOrderer.reorderModifiers(it) }
         .let { dropRedundantElements(it, options) }
         .let { addRedundantElements(it, options) }
         .let { prettyPrint(it, options, lineSeparator = "\n") }

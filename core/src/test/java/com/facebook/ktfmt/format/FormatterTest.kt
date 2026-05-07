@@ -67,6 +67,73 @@ class FormatterTest {
       )
 
   @Test
+  fun `sort declaration modifiers`() =
+      assertThatFormatting(
+              """
+              |open public class Foo {
+              |  override private suspend fun load() = Unit
+              |  suspend internal fun fetch() = Unit
+              |}
+              |"""
+                  .trimMargin()
+          )
+          .isEqualTo(
+              """
+              |public open class Foo {
+              |  private override suspend fun load() = Unit
+              |
+              |  internal suspend fun fetch() = Unit
+              |}
+              |"""
+                  .trimMargin()
+          )
+
+  @Test
+  fun `sort modifiers without moving annotations`() =
+      assertThatFormatting(
+              """
+              |class Foo {
+              |  @A override private fun annotated() = Unit
+              |  @A
+              |  suspend public fun multiline() = Unit
+              |  override @A private fun mixed() = Unit
+              |}
+              |"""
+                  .trimMargin()
+          )
+          .isEqualTo(
+              """
+              |class Foo {
+              |  @A private override fun annotated() = Unit
+              |
+              |  @A public suspend fun multiline() = Unit
+              |
+              |  override @A private fun mixed() = Unit
+              |}
+              |"""
+                  .trimMargin()
+          )
+
+  @Test
+  fun `do not sort modifiers across comments`() =
+      assertThatFormatting(
+              """
+              |class Foo {
+              |  override /* keep */ private fun mixed() = Unit
+              |}
+              |"""
+                  .trimMargin()
+          )
+          .isEqualTo(
+              """
+              |class Foo {
+              |  override /* keep */  private fun mixed() = Unit
+              |}
+              |"""
+                  .trimMargin()
+          )
+
+  @Test
   fun `call chains`() =
       assertFormatted(
           """
@@ -2269,12 +2336,18 @@ class FormatterTest {
 
   @Test
   fun `method modifiers`() =
-      assertFormatted(
-          """
-          |override internal fun f() {}
-          |"""
-              .trimMargin()
-      )
+      assertThatFormatting(
+              """
+              |override internal fun f() {}
+              |"""
+                  .trimMargin()
+          )
+          .isEqualTo(
+              """
+              |internal override fun f() {}
+              |"""
+                  .trimMargin()
+          )
 
   @Test
   fun `class modifiers`() =
