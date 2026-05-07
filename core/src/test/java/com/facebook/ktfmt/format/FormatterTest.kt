@@ -6824,6 +6824,191 @@ class FormatterTest {
       )
 
   @Test
+  fun `single expression body keeps short block-like call head on same line`() {
+    val code =
+        """
+        |fun foo() =
+        |    with(bar) {
+        |      foo()
+        |      //
+        |    }
+        |
+        |fun foo() =
+        |    with(bar, baz) {
+        |      foo()
+        |      //
+        |    }
+        |
+        |fun foo() =
+        |    with(
+        |        veryLongArgumentNameThatDoesNotFit) {
+        |          foo()
+        |          //
+        |        }
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun foo() = with(bar) {
+        |  foo()
+        |  //
+        |}
+        |
+        |fun foo() = with(bar, baz) {
+        |  foo()
+        |  //
+        |}
+        |
+        |fun foo() =
+        |    with(
+        |        veryLongArgumentNameThatDoesNotFit) {
+        |          foo()
+        |          //
+        |        }
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 40))
+        .isEqualTo(expected)
+  }
+
+  @Test
+  fun `single expression body keeps short when head on same line`() {
+    val code =
+        """
+        |fun Int.foo() =
+        |    when (this) {
+        |      0 -> "zero"
+        |      else -> "other"
+        |    }
+        |
+        |fun foo() =
+        |    when (veryLongSubjectNameThatDoesNotFit) {
+        |      0 -> "zero"
+        |      else -> "other"
+        |    }
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun Int.foo() = when (this) {
+        |  0 -> "zero"
+        |  else -> "other"
+        |}
+        |
+        |fun foo() =
+        |    when (veryLongSubjectNameThatDoesNotFit) {
+        |      0 -> "zero"
+        |      else -> "other"
+        |    }
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 40))
+        .isEqualTo(expected)
+  }
+
+  @Test
+  fun `assignments keep short block-like call head on same line`() {
+    val code =
+        """
+        |fun foo() {
+        |  val foo =
+        |      with(bar) {
+        |        foo()
+        |        //
+        |      }
+        |
+        |  foo =
+        |      with(bar) {
+        |        foo()
+        |        //
+        |      }
+        |
+        |  val foo =
+        |      with(
+        |          veryLongArgumentNameThatDoesNotFit) {
+        |            foo()
+        |            //
+        |          }
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun foo() {
+        |  val foo = with(bar) {
+        |    foo()
+        |    //
+        |  }
+        |
+        |  foo = with(bar) {
+        |    foo()
+        |    //
+        |  }
+        |
+        |  val foo =
+        |      with(
+        |          veryLongArgumentNameThatDoesNotFit) {
+        |            foo()
+        |            //
+        |          }
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 40))
+        .isEqualTo(expected)
+  }
+
+  @Test
+  fun `assignments keep short when head on same line`() {
+    val code =
+        """
+        |fun foo() {
+        |  val value =
+        |      when (bar) {
+        |        0 -> "zero"
+        |        else -> "other"
+        |      }
+        |
+        |  value =
+        |      when (bar) {
+        |        0 -> "zero"
+        |        else -> "other"
+        |      }
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun foo() {
+        |  val value = when (bar) {
+        |    0 -> "zero"
+        |    else -> "other"
+        |  }
+        |
+        |  value = when (bar) {
+        |    0 -> "zero"
+        |    else -> "other"
+        |  }
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 40))
+        .isEqualTo(expected)
+  }
+
+  @Test
   fun `dot-qualified scoping functions are block-like`() =
       assertFormatted(
           """

@@ -384,6 +384,8 @@ class KotlinInputAstVisitor(
           builder.token("=")
           if (isLambdaOrScopingFunction(bodyExpression)) {
             visitLambdaOrScopingFunction(bodyExpression)
+          } else if (isBlockLikeExpressionWithHead(bodyExpression)) {
+            visitBlockLikeExpressionWithHead(bodyExpression)
           } else {
             builder.block(expressionBreakIndent) {
               builder.breakOp(Doc.FillMode.INDEPENDENT, " ", ZERO)
@@ -1232,6 +1234,15 @@ class KotlinInputAstVisitor(
       return
     }
 
+    if (KtTokens.ALL_ASSIGNMENTS.contains(op) && isBlockLikeExpressionWithHead(expression.right)) {
+      // Assignments are statements in Kotlin; we don't have to worry about compound assignment.
+      visit(expression.left)
+      builder.space()
+      builder.token(expression.operationReference.text)
+      visitBlockLikeExpressionWithHead(expression.right)
+      return
+    }
+
     val parts =
         ArrayDeque<KtBinaryExpression>().apply {
           var current: KtExpression? = expression
@@ -1440,6 +1451,8 @@ class KotlinInputAstVisitor(
         builder.token("=")
         if (isLambdaOrScopingFunction(initializer)) {
           visitLambdaOrScopingFunction(initializer)
+        } else if (isBlockLikeExpressionWithHead(initializer)) {
+          visitBlockLikeExpressionWithHead(initializer)
         } else {
           builder.breakOp(Doc.FillMode.UNIFIED, " ", expressionBreakIndent)
           builder.block(expressionBreakIndent) {
@@ -1631,6 +1644,65 @@ class KotlinInputAstVisitor(
     }
 
     throw AssertionError(carry)
+  }
+
+  private fun isBlockLikeExpressionWithHead(expression: KtExpression?): Boolean {
+    if (expression == null) return false
+    if (expression.getPrevSiblingIgnoringWhitespace() is PsiComment) {
+      return false
+    }
+
+    return (expression is KtWhenExpression && whenHeadLength(expression) <= options.maxWidth) ||
+        expression is KtCallExpression &&
+            expression.calleeExpression?.text == "with" &&
+            expression.lambdaArguments.isNotEmpty() &&
+            callHeadLength(expression) <= options.maxWidth
+  }
+
+  private fun whenHeadLength(expression: KtWhenExpression): Int {
+    return "when".length +
+        (expression.subjectExpression?.let { " (${it.text})".length } ?: 0) +
+        " {".length
+  }
+
+  private fun callHeadLength(expression: KtCallExpression): Int {
+    return (expression.calleeExpression?.textLength ?: 0) +
+        (expression.typeArgumentList?.textLength ?: 0) +
+        (expression.valueArgumentList?.textLength ?: 0)
+  }
+
+  private fun visitBlockLikeExpressionWithHead(expression: KtExpression?) {
+    if (expression is KtWhenExpression) {
+      builder.space()
+      visit(expression)
+      return
+    }
+
+    val breakToExpr = genSym()
+    builder.breakOp(Doc.FillMode.INDEPENDENT, " ", expressionBreakIndent, Optional.of(breakToExpr))
+
+    when (expression) {
+      is KtCallExpression -> {
+        builder.sync(expression)
+        visit(expression.calleeExpression)
+        builder.block(expressionBreakIndent) {
+          builder.block(ZERO) { visit(expression.typeArgumentList) }
+          expression.valueArgumentList?.let { visitValueArgumentListInternal(it) }
+        }
+        when (expression.lambdaArguments.size) {
+          1 -> {
+            builder.space()
+            visitArgumentInternal(
+                expression.lambdaArguments.single(),
+                wrapInBlock = false,
+                brokeBeforeBrace = breakToExpr,
+            )
+          }
+          else -> throw ParseError("Maximum one trailing lambda is allowed", expression)
+        }
+      }
+      else -> throw AssertionError(expression)
+    }
   }
 
   override fun visitClassOrObject(classOrObject: KtClassOrObject) {
