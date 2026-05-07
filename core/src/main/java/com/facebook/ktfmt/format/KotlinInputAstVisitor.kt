@@ -320,7 +320,7 @@ class KotlinInputAstVisitor(
         visitContextReceiverList(contextReceiverList)
       }
       if (modifierList != null) {
-        visitModifierList(modifierList)
+        visitModifierList(modifierList, forceAnnotationLineBreaks = true)
       }
       if (keyword != null) {
         builder.token(keyword)
@@ -1380,7 +1380,9 @@ class KotlinInputAstVisitor(
       builder.blankLineWanted(OpsBuilder.BlankLineWanted.conditional(verticalAnnotationBreak))
     }
 
-    visit(modifiers)
+    if (modifiers != null) {
+      visitModifierList(modifiers, forceAnnotationLineBreaks = isField)
+    }
     builder.block(ZERO) {
       builder.block(ZERO) {
         if (valOrVarKeyword != null) {
@@ -1643,7 +1645,7 @@ class KotlinInputAstVisitor(
         visitContextReceiverList(contextReceiverList)
       }
       if (modifierList != null) {
-        visitModifierList(modifierList)
+        visitModifierList(modifierList, forceAnnotationLineBreaks = true)
       }
       val declarationKeyword = classOrObject.getDeclarationKeyword()
       if (declarationKeyword != null) {
@@ -1835,10 +1837,34 @@ class KotlinInputAstVisitor(
     builder.forcedBreak()
   }
 
+  private fun shouldForceAnnotationLineBreaks(list: KtModifierList): Boolean {
+    val leadingAnnotations =
+        list.node
+            .children()
+            .map { it.psi }
+            .filterNot { it is PsiWhiteSpace }
+            .takeWhile { it is KtAnnotationEntry || it is KtAnnotation }
+            .toList()
+
+    return leadingAnnotations.size > 1 ||
+        leadingAnnotations.any {
+          when (it) {
+            is KtAnnotationEntry -> it.valueArgumentList != null
+            is KtAnnotation -> true
+            else -> false
+          }
+        }
+  }
+
   /** For example `@Magic private final` */
-  override fun visitModifierList(list: KtModifierList) {
+  private fun visitModifierList(
+      list: KtModifierList,
+      forceAnnotationLineBreaks: Boolean,
+  ) {
     builder.sync(list)
     var onlyAnnotationsSoFar = true
+    val forceBreakAfterLeadingAnnotations =
+        forceAnnotationLineBreaks && shouldForceAnnotationLineBreaks(list)
 
     for (child in list.node.children()) {
       val psi = child.psi
@@ -1861,11 +1887,19 @@ class KotlinInputAstVisitor(
       }
 
       if (onlyAnnotationsSoFar) {
-        builder.breakOp(Doc.FillMode.UNIFIED, " ", ZERO)
+        if (forceBreakAfterLeadingAnnotations) {
+          builder.forcedBreak()
+        } else {
+          builder.breakOp(Doc.FillMode.UNIFIED, " ", ZERO)
+        }
       } else {
         builder.space()
       }
     }
+  }
+
+  override fun visitModifierList(list: KtModifierList) {
+    visitModifierList(list, forceAnnotationLineBreaks = false)
   }
 
   /**

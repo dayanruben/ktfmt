@@ -2262,7 +2262,8 @@ class FormatterTest {
   fun `annotations with parameters`() =
       assertFormatted(
           """
-          |@AnnWithArrayValue(1, 2, 3) class C
+          |@AnnWithArrayValue(1, 2, 3)
+          |class C
           |"""
               .trimMargin()
       )
@@ -4181,7 +4182,8 @@ class FormatterTest {
           """
           |@Px fun f(): Int = 5
           |
-          |@Dimenstion(unit = DP) fun g(): Int = 5
+          |@Dimenstion(unit = DP)
+          |fun g(): Int = 5
           |
           |@RunWith(MagicRunner::class)
           |@Px
@@ -4197,7 +4199,9 @@ class FormatterTest {
       assertFormatted(
           """
           |///////////////////////////////////////////////
-          |@Px @Px fun f(): Int = 5
+          |@Px
+          |@Px
+          |fun f(): Int = 5
           |
           |@Px
           |@Px
@@ -4215,7 +4219,9 @@ class FormatterTest {
           |  return 5
           |}
           |
-          |@Dimenstion(unit = DP) @Px fun g(): Int = 5
+          |@Dimenstion(unit = DP)
+          |@Px
+          |fun g(): Int = 5
           |
           |@Dimenstion(unit = DP)
           |@Px
@@ -4223,13 +4229,21 @@ class FormatterTest {
           |  return 5
           |}
           |
-          |@RunWith @Px class Test
+          |@RunWith
+          |@Px
+          |class Test
           |
-          |@RunWith(MagicRunner::class) @Px class Test
+          |@RunWith(MagicRunner::class)
+          |@Px
+          |class Test
           |
-          |@RunWith @Px class Test {}
+          |@RunWith
+          |@Px
+          |class Test {}
           |
-          |@RunWith(MagicRunner::class) @Px class Test {}
+          |@RunWith(MagicRunner::class)
+          |@Px
+          |class Test {}
           |
           |@RunWith(MagicRunner::class)
           |@Px
@@ -4251,6 +4265,66 @@ class FormatterTest {
               .trimMargin(),
           deduceMaxWidth = true,
       )
+
+  @Test
+  fun `declaration annotations with arguments or multiple entries are split onto separate lines`() =
+      assertThatFormatting(
+              """
+              |@Simple fun simpleFunction(): Int = 1
+              |
+              |@Simple val simpleProperty: Int = 1
+              |
+              |@Simple class SimpleClass
+              |
+              |@First @Second fun annotatedFunction(): Int = 1
+              |
+              |@First("value") fun annotatedFunctionWithArgument(): Int = 1
+              |
+              |@First @Second val annotatedProperty: Int = 1
+              |
+              |@First("value") val annotatedPropertyWithArgument: Int = 1
+              |
+              |@First @Second class AnnotatedClass
+              |
+              |@First("value") class AnnotatedClassWithArgument
+              |
+              |fun parametersStayCompact(@First @Second value: Int, @First("value") other: Int) = value + other
+              |"""
+                  .trimMargin()
+          )
+          .isEqualTo(
+              """
+              |@Simple fun simpleFunction(): Int = 1
+              |
+              |@Simple val simpleProperty: Int = 1
+              |
+              |@Simple class SimpleClass
+              |
+              |@First
+              |@Second
+              |fun annotatedFunction(): Int = 1
+              |
+              |@First("value")
+              |fun annotatedFunctionWithArgument(): Int = 1
+              |
+              |@First
+              |@Second
+              |val annotatedProperty: Int = 1
+              |
+              |@First("value")
+              |val annotatedPropertyWithArgument: Int = 1
+              |
+              |@First
+              |@Second
+              |class AnnotatedClass
+              |
+              |@First("value")
+              |class AnnotatedClassWithArgument
+              |
+              |fun parametersStayCompact(@First @Second value: Int, @First("value") other: Int) = value + other
+              |"""
+                  .trimMargin()
+          )
 
   @Test
   fun `no newlines after annotations on properties if entire expression fits in one line`() =
@@ -5993,7 +6067,8 @@ class FormatterTest {
           |class FooTest {
           |  @get:Rule val exceptionRule: ExpectedException = ExpectedException.none()
           |
-          |  @set:Magic(name = "Jane") var field: String
+          |  @set:Magic(name = "Jane")
+          |  var field: String
           |}
           |"""
               .trimMargin()
@@ -6007,7 +6082,8 @@ class FormatterTest {
           |
           |public @Magic(1) final class Foo
           |
-          |@Magic(1) public final class Foo
+          |@Magic(1)
+          |public final class Foo
           |"""
               .trimMargin()
       )
@@ -6096,7 +6172,8 @@ class FormatterTest {
           """
           |@Anno class F
           |
-          |@Anno(param = 1) class F
+          |@Anno(param = 1)
+          |class F
           |
           |@Anno(P)
           |// Foo
@@ -6110,7 +6187,8 @@ class FormatterTest {
   fun `handle type arguments in annotations`() =
       assertFormatted(
           """
-          |@TypeParceler<UUID, UUIDParceler>() class MyClass {}
+          |@TypeParceler<UUID, UUIDParceler>()
+          |class MyClass {}
           |"""
               .trimMargin()
       )
