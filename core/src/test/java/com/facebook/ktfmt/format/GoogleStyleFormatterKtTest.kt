@@ -1347,8 +1347,8 @@ class GoogleStyleFormatterKtTest {
           |  someExpr.let { x -> x }
           |  someExpr.let { x, y -> x }
           |
-          |  someExpr.let { paramFits
-          |    ->
+          |  someExpr.let {
+          |    paramFits ->
           |    butNotArrow
           |  }
           |  someExpr.let { params, fit

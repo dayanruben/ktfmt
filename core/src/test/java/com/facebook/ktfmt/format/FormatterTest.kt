@@ -965,6 +965,53 @@ class FormatterTest {
       )
 
   @Test
+  fun `long receiver before lambda does not strand lambda arrow`() =
+      assertThatFormatting(
+              """
+              |val input = "abc"
+              |val example =
+              |    try {
+              |        input.fakeFunction(a = "aaaaaaaaaaaaaaa", b = "bbbbbbbbbbb", c = "cccccccccccc").map { strng -> strng.replace("a", "b") }
+              |    } catch (error: Exception) {
+              |        println()
+              |    }
+              |"""
+                  .trimMargin()
+          )
+          .withOptions(Formatter.KOTLINLANG_FORMAT.copy(maxWidth = 100))
+          .isEqualTo(
+              """
+              |val input = "abc"
+              |val example =
+              |    try {
+              |        input.fakeFunction(a = "aaaaaaaaaaaaaaa", b = "bbbbbbbbbbb", c = "cccccccccccc").map {
+              |            strng ->
+              |            strng.replace("a", "b")
+              |        }
+              |    } catch (error: Exception) {
+              |        println()
+              |    }
+              |"""
+                  .trimMargin()
+          )
+
+  @Test
+  fun `short receiver before lambda keeps block-like formatting`() =
+      assertFormatted(
+          """
+          |val input = "abc"
+          |val example =
+          |    try {
+          |        input.fakeFunction(short).map { strng -> strng.replace("a", "b") }
+          |    } catch (error: Exception) {
+          |        println()
+          |    }
+          |"""
+              .trimMargin(),
+          formattingOptions = Formatter.KOTLINLANG_FORMAT.copy(maxWidth = 100),
+      )
+
+  @Test
   fun `when two lambdas are in a chain, avoid block syntax`() =
       assertFormatted(
           """

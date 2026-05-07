@@ -916,7 +916,11 @@ class KotlinInputAstVisitor(
           builder.token(",")
           builder.forcedBreak()
         } else if (hasParams) {
-          builder.breakOp(Doc.FillMode.INDEPENDENT, " ", ZERO)
+          if (valueParams.size == 1) {
+            builder.space()
+          } else {
+            builder.breakOp(Doc.FillMode.INDEPENDENT, " ", ZERO)
+          }
         }
         builder.token("->")
       }
