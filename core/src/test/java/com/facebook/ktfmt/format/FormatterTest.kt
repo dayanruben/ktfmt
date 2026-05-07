@@ -9042,6 +9042,39 @@ class FormatterTest {
   }
 
   @Test
+  fun `managed trailing comma does not push argument line over max width`() {
+    val code =
+        """
+        |fun foo() {
+        |  foo(first = "first", selectedAccountUiSideEffects = MutableSharedFlow<AccountViewModel.UiSideEffect>().asSharedFlow())
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun foo() {
+        |  foo(
+        |    first = "first",
+        |    selectedAccountUiSideEffects = MutableSharedFlow<AccountViewModel.UiSideEffect>().asSharedFlow()
+        |  )
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(
+            Formatter.GOOGLE_FORMAT.copy(
+                maxWidth = 100,
+                blockIndent = 2,
+                continuationIndent = 2,
+                trailingCommaManagementStrategy = TrailingCommaManagementStrategy.ONLY_ADD,
+            ),
+        )
+        .isEqualTo(expected)
+  }
+
+  @Test
   fun `single-line parameter list breaking to multi-line should add trailing comma in one pass`() {
     val code =
         """
@@ -9094,7 +9127,7 @@ class FormatterTest {
         |    param1 = "value1",
         |    param2 = "value2",
         |    param3 =
-        |      "this one is very long and will have to sit on its own line otherwise the line would overflow",
+        |      "this one is very long and will have to sit on its own line otherwise the line would overflow"
         |  )
         |}
         |"""

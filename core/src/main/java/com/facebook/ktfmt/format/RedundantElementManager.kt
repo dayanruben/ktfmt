@@ -91,7 +91,11 @@ object RedundantElementManager {
     return result.toString()
   }
 
-  fun addRedundantElements(code: String, options: FormattingOptions): String {
+  fun addRedundantElements(
+      code: String,
+      options: FormattingOptions,
+      respectMaxWidth: Boolean = false,
+  ): String {
     if (!options.manageTrailingCommas) {
       return code
     }
@@ -109,13 +113,20 @@ object RedundantElementManager {
     )
 
     val result = StringBuilder(code)
-    val suggestionElements = trailingCommaSuggestor.getTrailingCommaSuggestions()
-
-    for (element in suggestionElements.sortedByDescending(PsiElement::endOffset)) {
-      result.insert(element.endOffset, ',')
-    }
+    trailingCommaSuggestor
+        .getTrailingCommaSuggestions()
+        .asSequence()
+        .sortedByDescending(PsiElement::endOffset)
+        .filter { !respectMaxWidth || code.lineLengthAt(it.endOffset) != options.maxWidth }
+        .forEach { result.insert(it.endOffset, ',') }
 
     return result.toString()
+  }
+
+  private fun String.lineLengthAt(offset: Int): Int {
+    val lineStart = lastIndexOf('\n', startIndex = offset - 1).let { if (it == -1) 0 else it + 1 }
+    val lineEnd = indexOf('\n', startIndex = offset).let { if (it == -1) length else it }
+    return lineEnd - lineStart
   }
 
   private fun PsiElement?.containsNewline(): Boolean {
