@@ -2076,6 +2076,37 @@ class FormatterTest {
       )
 
   @Test
+  fun `short functional interface constructor after assignment break stays on one line`() =
+      assertFormatted(
+          """
+          |////////////////////////////////////////////////////////////////////////
+          |fun f() {
+          |  val result: VeryVeryLongCustomInterface =
+          |      VeryVeryLongCustomInterface { EndResult }
+          |}
+          |"""
+              .trimMargin(),
+          deduceMaxWidth = true,
+      )
+
+  @Test
+  fun `multiline functional interface constructor after assignment break keeps multiline body`() =
+      assertFormatted(
+          """
+          |////////////////////////////////////////////////////////////////////////
+          |fun f() {
+          |  val result: VeryVeryLongCustomInterface =
+          |      VeryVeryLongCustomInterface {
+          |        firstStatement()
+          |        secondStatement()
+          |      }
+          |}
+          |"""
+              .trimMargin(),
+          deduceMaxWidth = true,
+      )
+
+  @Test
   fun `when() expression storing in local variable`() =
       assertFormatted(
           """

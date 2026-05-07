@@ -1611,6 +1611,7 @@ class KotlinInputAstVisitor(
     builder.breakOp(Doc.FillMode.INDEPENDENT, " ", expressionBreakIndent, Optional.of(breakToExpr))
 
     var carry = expr
+    var tryOneLineFunctionalInterfaceConstructor = false
     if (carry is KtQualifiedExpression && carry.receiverExpression is KtSimpleNameExpression) {
       visit(carry.receiverExpression)
       builder.token(carry.operationSign.value)
@@ -1619,6 +1620,9 @@ class KotlinInputAstVisitor(
     if (carry is KtCallExpression) {
       visit(carry.calleeExpression)
       builder.space()
+      if (isFunctionalInterfaceConstructor(carry)) {
+        tryOneLineFunctionalInterfaceConstructor = true
+      }
       carry = carry.lambdaArguments[0].getArgumentExpression()
     }
     if (carry is KtLabeledExpression) {
@@ -1626,11 +1630,57 @@ class KotlinInputAstVisitor(
       carry = carry.baseExpression ?: fail()
     }
     if (carry is KtLambdaExpression) {
+      if (
+          tryOneLineFunctionalInterfaceConstructor &&
+              tryVisitOneLineFunctionalInterfaceConstructorLambda(carry)
+      ) {
+        return
+      }
       visitLambdaExpressionInternal(carry, brokeBeforeBrace = breakToExpr)
       return
     }
 
     throw AssertionError(carry)
+  }
+
+  private fun isFunctionalInterfaceConstructor(callExpression: KtCallExpression): Boolean =
+      callExpression.calleeExpression?.text?.firstOrNull()?.isUpperCase() == true
+
+  private fun tryVisitOneLineFunctionalInterfaceConstructorLambda(
+      lambdaExpression: KtLambdaExpression
+  ): Boolean {
+    val bodyExpression = lambdaExpression.bodyExpression ?: fail()
+    val expressionStatements = bodyExpression.children
+    if (
+        expressionStatements.size != 1 ||
+            expressionStatements.first() is KtReturnExpression ||
+            bodyExpression.startsWithComment() ||
+            bodyExpression.children().any { it is PsiComment } ||
+            lambdaExpression.functionLiteral.valueParameterList?.trailingComma != null
+    ) {
+      return false
+    }
+
+    builder.sync(lambdaExpression)
+    builder.token("{")
+
+    val valueParams = lambdaExpression.valueParameters
+    val hasParams = valueParams.isNotEmpty()
+    val hasArrow = lambdaExpression.functionLiteral.arrow != null
+    if (hasParams || hasArrow) {
+      builder.space()
+      if (hasParams) {
+        visitEachCommaSeparated(valueParams)
+        builder.space()
+      }
+      builder.token("->")
+    }
+
+    builder.space()
+    visitStatement(expressionStatements[0])
+    builder.space()
+    builder.token("}", blockIndent)
+    return true
   }
 
   override fun visitClassOrObject(classOrObject: KtClassOrObject) {
