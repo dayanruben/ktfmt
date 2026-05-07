@@ -164,6 +164,9 @@ class KotlinInputAstVisitor(
   /** Tracks whether we are handling an import directive */
   private var inImport = false
 
+  /** Tracks whether the script initializer is followed only by a trailing comment. */
+  private var inScriptInitializerBeforeTrailingComment = false
+
   /** Example: `fun foo(n: Int) { println(n) }` */
   override fun visitNamedFunction(function: KtNamedFunction) {
     builder.sync(function)
@@ -530,8 +533,10 @@ class KotlinInputAstVisitor(
     val groupingInfos = computeGroupingInfo(parts, useBlockLikeLambdaStyle)
     builder.block(expressionBreakIndent) {
       val nameTag = genSym() // allows adjusting arguments indentation if a break will be made
+      val omitDotBreaks =
+          inScriptInitializerBeforeTrailingComment && expression.text.length <= options.maxWidth
       for ((index, ktExpression) in parts.withIndex()) {
-        if (ktExpression is KtQualifiedExpression) {
+        if (ktExpression is KtQualifiedExpression && !omitDotBreaks) {
           builder.breakOp(Doc.FillMode.UNIFIED, "", ZERO, Optional.of(nameTag))
         }
         repeat(groupingInfos[index].groupOpenCount) { builder.open(ZERO) }
@@ -822,6 +827,10 @@ class KotlinInputAstVisitor(
             arguments.first().getArgumentName() == null
     val hasTrailingComma = list.trailingComma != null
     val hasEmptyParens = list.hasEmptyParens()
+    val keepScriptInitializerArgumentsOnLine =
+        inScriptInitializerBeforeTrailingComment &&
+            !hasTrailingComma &&
+            list.text.length <= options.maxWidth
 
     val wrapInBlock: Boolean
     val breakBeforePostfix: Boolean
@@ -834,9 +843,10 @@ class KotlinInputAstVisitor(
       breakAfterPrefix = false
     } else {
       wrapInBlock = !options.manageTrailingCommas
-      breakBeforePostfix = options.manageTrailingCommas && !hasEmptyParens
-      leadingBreak = !hasEmptyParens
-      breakAfterPrefix = !hasEmptyParens
+      breakBeforePostfix =
+          options.manageTrailingCommas && !hasEmptyParens && !keepScriptInitializerArgumentsOnLine
+      leadingBreak = !hasEmptyParens && !keepScriptInitializerArgumentsOnLine
+      breakAfterPrefix = !hasEmptyParens && !keepScriptInitializerArgumentsOnLine
     }
 
     return visitEachCommaSeparated(
@@ -2682,7 +2692,9 @@ class KotlinInputAstVisitor(
       if (child.text.isBlank()) {
         continue
       }
-      builder.forcedBreak()
+      if (child !is PsiComment) {
+        builder.forcedBreak()
+      }
       val childGetsBlankLineBefore = child !is KtProperty
       if (first) {
         builder.blankLineWanted(OpsBuilder.BlankLineWanted.PRESERVE)
@@ -2693,8 +2705,14 @@ class KotlinInputAstVisitor(
       ) {
         builder.blankLineWanted(OpsBuilder.BlankLineWanted.YES)
       }
+      val wasInScriptInitializerBeforeTrailingComment = inScriptInitializerBeforeTrailingComment
+      inScriptInitializerBeforeTrailingComment =
+          child is KtScriptInitializer && isBeforeTrailingComment(child)
       visit(child)
-      builder.guessToken(";")
+      inScriptInitializerBeforeTrailingComment = wasInScriptInitializerBeforeTrailingComment
+      if (child !is PsiComment) {
+        builder.guessToken(";")
+      }
       lastChildHadBlankLineBefore = childGetsBlankLineBefore
       lastChildIsContextReceiver =
           child is KtScriptInitializer &&
@@ -2702,6 +2720,21 @@ class KotlinInputAstVisitor(
       first = false
     }
     markForPartialFormat()
+  }
+
+  private fun isBeforeTrailingComment(element: PsiElement): Boolean {
+    var next = element.nextSibling
+    var sawComment = false
+    while (next != null) {
+      when {
+        next is PsiWhiteSpace -> {}
+        next is PsiComment -> sawComment = true
+        next.text.isBlank() -> {}
+        else -> return false
+      }
+      next = next.nextSibling
+    }
+    return sawComment
   }
 
   /**

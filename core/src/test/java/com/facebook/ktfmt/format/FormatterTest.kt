@@ -67,6 +67,17 @@ class FormatterTest {
       )
 
   @Test
+  fun `script trailing comment does not break short call chain`() =
+      assertFormatted(
+          """
+          |tasks.named("preBuild").dependsOn("test")
+          |
+          |//
+          |"""
+              .trimMargin()
+      )
+
+  @Test
   fun `call chains`() =
       assertFormatted(
           """
