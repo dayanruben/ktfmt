@@ -37,6 +37,8 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.com.intellij.psi.PsiElementVisitor
 import org.jetbrains.kotlin.com.intellij.psi.PsiWhiteSpace
 import org.jetbrains.kotlin.psi.KtImportDirective
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 
@@ -90,6 +92,16 @@ object Formatter {
   @JvmStatic
   @Throws(FormatterException::class, ParseError::class)
   fun format(options: FormattingOptions, code: String): String {
+    return format(options, code, emptyList())
+  }
+
+  /**
+   * format formats the Kotlin code given in 'code' and returns it as a string. When line ranges are
+   * provided, only formatter replacements intersecting those 1-based inclusive ranges are applied.
+   */
+  @JvmStatic
+  @Throws(FormatterException::class, ParseError::class)
+  fun format(options: FormattingOptions, code: String, lineRanges: List<LineRange>): String {
     val (shebang, kotlinCode) =
         if (code.startsWith("#!")) {
           code.split("\n".toRegex(), limit = 2)
@@ -98,24 +110,42 @@ object Formatter {
         }
     checkEscapeSequences(kotlinCode)
 
-    return kotlinCode
-        .let { convertLineSeparators(it) }
-        .let { sortedAndDistinctImports(it) }
-        .let { dropRedundantElements(it, options) }
-        .let { addRedundantElements(it, options) }
-        .let { prettyPrint(it, options, lineSeparator = "\n") }
-        .let { addRedundantElements(it, options) }
-        .let { MultilineStringFormatter(options.continuationIndent).format(it) }
+    val normalizedCode = convertLineSeparators(kotlinCode)
+    val formattedCode =
+        if (lineRanges.isEmpty()) {
+          normalizedCode
+              .let { sortedAndDistinctImports(it) }
+              .let { dropRedundantElements(it, options) }
+              .let { addRedundantElements(it, options) }
+              .let { prettyPrint(it, options, lineSeparator = "\n") }
+              .let { addRedundantElements(it, options) }
+              .let { MultilineStringFormatter(options.continuationIndent).format(it) }
+        } else {
+          formatLineRanges(normalizedCode, options, lineRanges)
+        }
+
+    return formattedCode
         .let { convertLineSeparators(it, checkNotNull(Newlines.guessLineSeparator(kotlinCode))) }
         .let { if (shebang.isEmpty()) it else shebang + "\n" + it }
   }
 
   /** prettyPrint reflows 'code' using google-java-format's engine. */
-  private fun prettyPrint(code: String, options: FormattingOptions, lineSeparator: String): String {
+  private fun prettyPrint(
+      code: String,
+      options: FormattingOptions,
+      lineSeparator: String,
+      characterRanges: Collection<Range<Int>> = ImmutableList.of(Range.closedOpen(0, code.length)),
+  ): String {
     val file = Parser.parse(code)
     val kotlinInput = KotlinInput(code, file)
     val javaOutput =
         JavaOutput(lineSeparator, kotlinInput, KDocCommentsHelper(lineSeparator, options.maxWidth))
+    val tokenRangeSet = kotlinInput.characterRangesToTokenRanges(characterRanges)
+    for (tokenRange in tokenRangeSet.asRanges()) {
+      val startToken = kotlinInput.getToken(tokenRange.lowerEndpoint()) ?: continue
+      val endToken = kotlinInput.getToken(tokenRange.upperEndpoint() - 1) ?: continue
+      javaOutput.markForPartialFormat(startToken, endToken)
+    }
     val builder = OpsBuilder(kotlinInput, javaOutput)
     file.accept(createAstVisitor(options, builder))
     builder.sync(kotlinInput.text.length)
@@ -129,11 +159,97 @@ object Formatter {
     doc.write(javaOutput)
     javaOutput.flush()
 
-    val tokenRangeSet =
-        kotlinInput.characterRangesToTokenRanges(ImmutableList.of(Range.closedOpen(0, code.length)))
+    val replacements =
+        javaOutput.getFormatReplacements(tokenRangeSet).filter { replacement ->
+          characterRanges.any { range -> rangesIntersect(replacement.replaceRange, range) }
+        }
     return WhitespaceTombstones.replaceTombstoneWithTrailingWhitespace(
-        JavaOutput.applyReplacements(code, javaOutput.getFormatReplacements(tokenRangeSet))
+        JavaOutput.applyReplacements(code, replacements)
     )
+  }
+
+  private fun lineRangesToCharacterRanges(
+      code: String,
+      lineRanges: List<LineRange>,
+  ): List<Range<Int>> {
+    val lineStartOffsets = mutableListOf(0)
+    for (index in code.indices) {
+      if (code[index] == '\n' && index + 1 < code.length) {
+        lineStartOffsets.add(index + 1)
+      }
+    }
+
+    return lineRanges.mapNotNull { lineRange ->
+      val startOffset = lineStartOffsets.getOrNull(lineRange.start - 1) ?: return@mapNotNull null
+      val endOffset =
+          lineStartOffsets.getOrNull(lineRange.end)?.let { nextLineStart -> nextLineStart - 1 }
+              ?: code.length
+      Range.closedOpen(startOffset, endOffset)
+    }
+  }
+
+  private fun formatLineRanges(
+      code: String,
+      options: FormattingOptions,
+      lineRanges: List<LineRange>,
+  ): String {
+    val file = Parser.parse(code)
+    val functionRanges =
+        file
+            .collectDescendantsOfType<KtNamedFunction>()
+            .filter { function ->
+              val functionLineRange =
+                  LineRange(
+                      StringUtil.offsetToLineColumn(code, function.startOffset).line + 1,
+                      StringUtil.offsetToLineColumn(code, function.endOffset).line + 1,
+                  )
+              lineRanges.any { lineRange -> lineRangesIntersect(functionLineRange, lineRange) }
+            }
+            .map { Range.closedOpen(it.startOffset, it.endOffset) }
+            .let { ranges ->
+              ranges.filter { range ->
+                ranges.none { other -> other != range && rangeEncloses(other, range) }
+              }
+            }
+
+    if (functionRanges.isEmpty()) {
+      return prettyPrint(
+          code,
+          options,
+          lineSeparator = "\n",
+          characterRanges = lineRangesToCharacterRanges(code, lineRanges),
+      )
+    }
+
+    val formattedCode = StringBuilder(code)
+    for (range in functionRanges.sortedByDescending { it.lowerEndpoint() }) {
+      val original = code.substring(range.lowerEndpoint(), range.upperEndpoint())
+      val formatted =
+          prettyPrint(original, options, lineSeparator = "\n").trimTrailingNewlineLike(original)
+      formattedCode.replace(range.lowerEndpoint(), range.upperEndpoint(), formatted)
+    }
+    return formattedCode.toString()
+  }
+
+  private fun String.trimTrailingNewlineLike(original: String): String {
+    return if (original.endsWith("\n") || !endsWith("\n")) this else dropLast(1)
+  }
+
+  private fun lineRangesIntersect(first: LineRange, second: LineRange): Boolean =
+      first.start <= second.end && second.start <= first.end
+
+  private fun rangeEncloses(first: Range<Int>, second: Range<Int>): Boolean =
+      first.lowerEndpoint() <= second.lowerEndpoint() &&
+          first.upperEndpoint() >= second.upperEndpoint()
+
+  private fun rangesIntersect(first: Range<Int>, second: Range<Int>): Boolean {
+    if (first.isEmpty) {
+      return second.contains(first.lowerEndpoint())
+    }
+    if (second.isEmpty) {
+      return first.contains(second.lowerEndpoint())
+    }
+    return first.isConnected(second) && !first.intersection(second).isEmpty
   }
 
   private fun createAstVisitor(options: FormattingOptions, builder: OpsBuilder): PsiElementVisitor {

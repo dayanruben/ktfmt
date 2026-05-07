@@ -146,7 +146,7 @@ class Main(
           else EditorConfigResolver.resolveFormattingOptions(file, args.formattingOptions)
       val bytes = if (file == null) input else FileInputStream(file)
       val code = BufferedReader(InputStreamReader(bytes, UTF_8)).readText().removePrefix(UTF8_BOM)
-      val formattedCode = Formatter.format(formattingOptions, code)
+      val formattedCode = Formatter.format(formattingOptions, code, args.lineRanges)
       val alreadyFormatted = code == formattedCode
 
       // stdin

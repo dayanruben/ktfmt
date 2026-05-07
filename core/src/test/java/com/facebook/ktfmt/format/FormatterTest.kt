@@ -32,6 +32,35 @@ import org.junit.runners.JUnit4
 class FormatterTest {
 
   @Test
+  fun `formatting line ranges only applies intersecting replacements`() {
+    val code =
+        """
+        |fun first ( ) {
+        |println( "first")
+        |}
+        |
+        |fun second ( ) {
+        |println( "second")
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun first ( ) {
+        |println( "first")
+        |}
+        |
+        |fun second() {
+        |  println("second")
+        |}
+        |"""
+            .trimMargin()
+
+    assertThat(Formatter.format(META_FORMAT, code, listOf(LineRange(5, 7)))).isEqualTo(expected)
+  }
+
+  @Test
   fun `support script (kts) files`() =
       assertFormatted(
           """

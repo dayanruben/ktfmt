@@ -18,6 +18,7 @@ package com.facebook.ktfmt.cli
 
 import com.facebook.ktfmt.format.Formatter
 import com.facebook.ktfmt.format.FormattingOptions
+import com.facebook.ktfmt.format.LineRange
 import com.facebook.ktfmt.util.Ktfmt
 import java.io.File
 import java.nio.charset.StandardCharsets.UTF_8
@@ -39,6 +40,8 @@ data class ParsedArgs(
     val editorConfig: Boolean,
     /** Suppress all non-error output. */
     val quiet: Boolean,
+    /** 1-based, inclusive line ranges to format. Empty means format the whole file. */
+    val lineRanges: List<LineRange>,
 ) {
   companion object {
 
@@ -87,6 +90,7 @@ data class ParsedArgs(
         |  --enable-editorconfig             Enable .editorconfig overrides for supported formatting options (limited)
         |                                        see https://github.com/facebook/ktfmt/blob/main/README.md
         |  --quiet                           Suppress all non-error output
+        |  --lines=<start>:<end>             Format only the inclusive 1-based line range; repeatable
         |  
         |ARGFILE:
         |  If the only argument begins with '@', the remainder of the argument is treated
@@ -114,6 +118,7 @@ data class ParsedArgs(
       var stdinName: String? = null
       var editorConfig = false
       var quiet = false
+      val lineRanges = mutableListOf<LineRange>()
 
       if ("--help" in args || "-h" in args) return ParseResult.ShowMessage(HELP_TEXT)
       if ("--version" in args || "-v" in args) {
@@ -130,6 +135,14 @@ data class ParsedArgs(
           arg == "--do-not-remove-unused-imports" -> removeUnusedImports = false
           arg == "--enable-editorconfig" -> editorConfig = true
           arg == "--quiet" -> quiet = true
+          arg.startsWith("--lines") -> {
+            val value =
+                parseKeyValueArg("--lines", arg)
+                    ?: return ParseResult.Error(
+                        "Found option '${arg}', expected '${"--lines"}=<start>:<end>'"
+                    )
+            lineRanges.add(parseLineRange(value) ?: return ParseResult.Error(lineRangeError(value)))
+          }
           arg.startsWith("--stdin-name=") ->
               stdinName =
                   parseKeyValueArg("--stdin-name", arg)
@@ -164,13 +177,40 @@ data class ParsedArgs(
               stdinName,
               editorConfig,
               quiet,
+              lineRanges,
           )
       )
     }
 
     private fun parseKeyValueArg(key: String, arg: String): String? {
       val parts = arg.split('=', limit = 2)
-      return parts[1].takeIf { parts[0] == key || parts.size == 2 }
+      return parts.getOrNull(1).takeIf { parts[0] == key && parts.size == 2 }
+    }
+
+    private fun parseLineRange(value: String): LineRange? {
+      val parts = value.split(':', limit = 2)
+      val start = parts.getOrNull(0)?.toIntOrNull()
+      val end = parts.getOrNull(1)?.toIntOrNull()
+      return when {
+        parts.size != 2 || start == null || end == null -> null
+        start < 1 -> null
+        end < start -> null
+        else -> LineRange(start, end)
+      }
+    }
+
+    private fun lineRangeError(value: String): String {
+      val parts = value.split(':', limit = 2)
+      val start = parts.getOrNull(0)?.toIntOrNull()
+      val end = parts.getOrNull(1)?.toIntOrNull()
+      val reason =
+          when {
+            parts.size != 2 || start == null || end == null -> "expected start:end"
+            start < 1 -> "start and end must be >= 1"
+            end < start -> "end must be >= start"
+            else -> "expected start:end"
+          }
+      return "Invalid --lines value '$value': $reason"
     }
   }
 }

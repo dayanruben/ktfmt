@@ -561,4 +561,46 @@ class MainTest {
     assertThat(returnValue).isEqualTo(1)
     assertThat(err.toString(testCharset)).contains("foo.kt:1:14: error: ")
   }
+
+  @Test
+  fun `--lines formats only selected line ranges`() {
+    val file = root.resolve("foo.kt")
+    file.writeText(
+        """
+        |fun first ( ) {
+        |println( "first")
+        |}
+        |
+        |fun second ( ) {
+        |println( "second")
+        |}
+        |"""
+            .trimMargin(),
+        UTF_8,
+    )
+
+    val exitCode =
+        Main(
+                emptyInput,
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf("--lines=5:7", file.toString()),
+            )
+            .run()
+
+    assertThat(exitCode).isEqualTo(0)
+    assertThat(file.readText(UTF_8))
+        .isEqualTo(
+            """
+            |fun first ( ) {
+            |println( "first")
+            |}
+            |
+            |fun second() {
+            |  println("second")
+            |}
+            |"""
+                .trimMargin()
+        )
+  }
 }

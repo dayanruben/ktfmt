@@ -18,6 +18,7 @@ package com.facebook.ktfmt.cli
 
 import com.facebook.ktfmt.format.Formatter
 import com.facebook.ktfmt.format.FormattingOptions
+import com.facebook.ktfmt.format.LineRange
 import com.google.common.truth.Truth.assertThat
 import java.io.FileNotFoundException
 import kotlin.io.path.createTempDirectory
@@ -113,6 +114,26 @@ class ParsedArgsTest {
   fun `parseOptions recognizes --quiet`() {
     val parsed = assertSucceeds(ParsedArgs.parseOptions(arrayOf("--quiet", "foo.kt")))
     assertThat(parsed.quiet).isTrue()
+  }
+
+  @Test
+  fun `parseOptions recognizes repeated --lines`() {
+    val parsed =
+        assertSucceeds(
+            ParsedArgs.parseOptions(arrayOf("--lines=2:4", "--lines=8:8", "foo.kt")),
+        )
+
+    assertThat(parsed.lineRanges).containsExactly(LineRange(2, 4), LineRange(8, 8)).inOrder()
+  }
+
+  @Test
+  fun `parseOptions rejects invalid --lines`() {
+    assertThat(ParsedArgs.parseOptions(arrayOf("--lines=0:1", "foo.kt")))
+        .isEqualTo(ParseResult.Error("Invalid --lines value '0:1': start and end must be >= 1"))
+    assertThat(ParsedArgs.parseOptions(arrayOf("--lines=4:2", "foo.kt")))
+        .isEqualTo(ParseResult.Error("Invalid --lines value '4:2': end must be >= start"))
+    assertThat(ParsedArgs.parseOptions(arrayOf("--lines=abc:2", "foo.kt")))
+        .isEqualTo(ParseResult.Error("Invalid --lines value 'abc:2': expected start:end"))
   }
 
   @Test
@@ -258,6 +279,7 @@ class ParsedArgsTest {
       stdinName: String? = null,
       editorConfig: Boolean = false,
       quiet: Boolean = false,
+      lineRanges: List<LineRange> = emptyList(),
   ): ParseResult.Ok {
     val returnedFormattingOptions =
         formattingOptions.copy(removeUnusedImports = removedUnusedImports)
@@ -270,6 +292,7 @@ class ParsedArgsTest {
             stdinName,
             editorConfig,
             quiet,
+            lineRanges,
         )
     )
   }
