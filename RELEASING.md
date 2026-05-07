@@ -8,3 +8,7 @@
     1. pushd online_formatter; ./build_and_deploy.sh; popd
         1. Credentials should be configured using https://docs.aws.amazon.com/cli/latest/topic/config-vars.html#credentials
     2. Follow instructions in website/README.md
+
+## Snapshot Publishing
+
+When `ktfmt.version` in `gradle.properties` ends with `-SNAPSHOT`, the `Publish Maven Snapshot` workflow publishes `:ktfmt` snapshots to Sonatype's snapshots repository on pushes to `main` and from manual dispatches. The workflow uses the same OSSRH and GPG secrets as the release workflow, and only runs the direct Maven snapshot publication task; it does not close or release staging repositories.

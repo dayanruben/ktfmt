@@ -1,0 +1,57 @@
+name: Publish Maven Snapshot
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-maven-snapshot
+  cancel-in-progress: false
+
+jobs:
+  publish_maven_snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: zulu
+
+      - name: Verify snapshot version
+        run: |
+          VERSION="$(sed -n 's/^ktfmt\.version=//p' gradle.properties)"
+          if [[ -z "$VERSION" ]]; then
+            echo "ktfmt.version is not set in gradle.properties" >&2
+            exit 1
+          fi
+          if [[ "$VERSION" != *-SNAPSHOT ]]; then
+            echo "Refusing to publish non-SNAPSHOT version: $VERSION" >&2
+            exit 1
+          fi
+          echo "Publishing ktfmt $VERSION"
+
+      - id: install-secret-key
+        name: Install gpg secret key
+        run: |
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Publish to Sonatype Snapshots
+        env:
+          SIGN_BUILD: true
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
+        run: |
+          ./gradlew :ktfmt:publishMavenPublicationToSonatypeSnapshotsRepository \
+              --stacktrace \
+              --no-daemon \
+              -Psigning.gnupg.passphrase="$GPG_PASSPHRASE"

@@ -143,6 +143,19 @@ group = "com.facebook"
 version = rootProject.version
 
 publishing {
+  if (version.toString().endsWith("-SNAPSHOT")) {
+    repositories {
+      maven {
+        name = "SonatypeSnapshots"
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+        credentials {
+          username = System.getenv("OSSRH_USERNAME")
+          password = System.getenv("OSSRH_PASSWORD")
+        }
+      }
+    }
+  }
+
   publications {
     create<MavenPublication>("maven") {
       groupId = "com.facebook"
