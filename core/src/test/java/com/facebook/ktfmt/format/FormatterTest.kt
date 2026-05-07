@@ -107,6 +107,33 @@ class FormatterTest {
       )
 
   @Test
+  fun `qualified call with type argument breaks before selector`() {
+    val code =
+        """
+        |fun f() {
+        |  val response = testClient.given().request().thenRespond<LongType> { body() }
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun f() {
+        |  val response =
+        |      testClient
+        |          .given()
+        |          .request()
+        |          .thenRespond<LongType> { body() }
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 48))
+        .isEqualTo(expected)
+  }
+
+  @Test
   fun `line breaks in function arguments`() =
       assertFormatted(
           """

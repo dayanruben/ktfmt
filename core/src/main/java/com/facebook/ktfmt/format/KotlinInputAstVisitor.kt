@@ -571,6 +571,9 @@ class KotlinInputAstVisitor(
                   argumentsIndent = Indent.If.make(nameTag, expressionBreakIndent, argsIndentElse),
                   lambdaIndent = Indent.If.make(nameTag, ZERO, lambdaIndentElse),
                   negativeLambdaIndent = Indent.If.make(nameTag, ZERO, negativeLambdaIndentElse),
+                  preserveSingleTypeArgument =
+                      selectorExpression.valueArgumentList == null &&
+                          selectorExpression.lambdaArguments.isNotEmpty(),
               )
             }
           }
@@ -767,6 +770,7 @@ class KotlinInputAstVisitor(
       argumentsIndent: Indent = expressionBreakIndent,
       lambdaIndent: Indent = ZERO,
       negativeLambdaIndent: Indent = ZERO,
+      preserveSingleTypeArgument: Boolean = false,
   ) {
     // Apply the lambda indent to the callee, type args, value args, and the lambda.
     // This is undone for the first three by the negative lambda indent.
@@ -780,7 +784,18 @@ class KotlinInputAstVisitor(
       builder.block(negativeLambdaIndent) {
         visit(callee)
         builder.block(argumentsIndent) {
-          builder.block(ZERO) { visit(typeArgumentList) }
+          builder.block(ZERO) {
+            if (
+                preserveSingleTypeArgument &&
+                    typeArgumentList != null &&
+                    typeArgumentList.arguments.size == 1 &&
+                    typeArgumentList.trailingComma == null
+            ) {
+              visitSingleTypeArgumentList(typeArgumentList)
+            } else {
+              visit(typeArgumentList)
+            }
+          }
           if (argumentList != null) {
             brokeBeforeBrace = visitValueArgumentListInternal(argumentList)
           }
@@ -799,6 +814,13 @@ class KotlinInputAstVisitor(
         else -> throw ParseError("Maximum one trailing lambda is allowed", lambdaArguments[1])
       }
     }
+  }
+
+  private fun visitSingleTypeArgumentList(typeArgumentList: KtTypeArgumentList) {
+    builder.sync(typeArgumentList)
+    builder.token("<")
+    visit(typeArgumentList.arguments.single())
+    builder.token(">")
   }
 
   /** Example (`1, "hi"`) in a function call */
