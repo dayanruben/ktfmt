@@ -874,6 +874,7 @@ class KotlinInputAstVisitor(
   private fun visitLambdaExpressionInternal(
       lambdaExpression: KtLambdaExpression,
       brokeBeforeBrace: BreakTag?,
+      forceMultiline: Boolean = false,
   ) {
     builder.sync(lambdaExpression)
 
@@ -923,7 +924,11 @@ class KotlinInputAstVisitor(
     }
 
     if (hasParams || hasArrow || hasStatements || hasComments) {
-      builder.breakOp(Doc.FillMode.UNIFIED, " ", bracePlusZeroIndent)
+      if (forceMultiline) {
+        builder.forcedBreak(bracePlusZeroIndent)
+      } else {
+        builder.breakOp(Doc.FillMode.UNIFIED, " ", bracePlusZeroIndent)
+      }
     }
 
     if (hasStatements) {
@@ -964,7 +969,11 @@ class KotlinInputAstVisitor(
 
     if (hasParams || hasArrow || hasStatements || hasComments) {
       // If we had to break in the body, ensure there is a break before the closing brace
-      builder.breakOp(Doc.FillMode.UNIFIED, "", bracePlusZeroIndent)
+      if (forceMultiline) {
+        builder.forcedBreak(bracePlusZeroIndent)
+      } else {
+        builder.breakOp(Doc.FillMode.UNIFIED, "", bracePlusZeroIndent)
+      }
     }
     builder.block(bracePlusZeroIndent) {
       builder.fenceComments()
@@ -1228,10 +1237,9 @@ class KotlinInputAstVisitor(
       visit(expression.left)
       builder.space()
       builder.token(expression.operationReference.text)
-      visitLambdaOrScopingFunction(expression.right)
+      visitLambdaOrScopingFunction(expression.right, forceMultilineLambda = true)
       return
     }
-
     val parts =
         ArrayDeque<KtBinaryExpression>().apply {
           var current: KtExpression? = expression
@@ -1606,7 +1614,10 @@ class KotlinInputAstVisitor(
   }
 
   /** See [isLambdaOrScopingFunction] for examples. */
-  private fun visitLambdaOrScopingFunction(expr: PsiElement?) {
+  private fun visitLambdaOrScopingFunction(
+      expr: PsiElement?,
+      forceMultilineLambda: Boolean = false,
+  ) {
     val breakToExpr = genSym()
     builder.breakOp(Doc.FillMode.INDEPENDENT, " ", expressionBreakIndent, Optional.of(breakToExpr))
 
@@ -1626,7 +1637,11 @@ class KotlinInputAstVisitor(
       carry = carry.baseExpression ?: fail()
     }
     if (carry is KtLambdaExpression) {
-      visitLambdaExpressionInternal(carry, brokeBeforeBrace = breakToExpr)
+      visitLambdaExpressionInternal(
+          carry,
+          brokeBeforeBrace = breakToExpr,
+          forceMultiline = forceMultilineLambda,
+      )
       return
     }
 

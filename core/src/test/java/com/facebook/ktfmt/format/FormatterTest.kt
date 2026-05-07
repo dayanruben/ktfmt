@@ -546,6 +546,25 @@ class FormatterTest {
       )
 
   @Test
+  fun `assignment expressions with dsl calls and trailing lambdas are block-like`() =
+      assertFormatted(
+          """
+          |////////////////////////////////////////
+          |fun f() {
+          |  foo = fooDsl {
+          |    bar += barDsl {
+          |      baz = bazDsl {
+          |        bal = 1
+          |      }
+          |    }
+          |  }
+          |}
+          |"""
+              .trimMargin(),
+          deduceMaxWidth = true,
+      )
+
+  @Test
   fun `don't keep adding newlines between these two comments when they're at end of file`() {
     assertFormatted(
         """
