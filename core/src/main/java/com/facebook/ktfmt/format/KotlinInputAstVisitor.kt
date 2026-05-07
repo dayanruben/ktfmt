@@ -532,7 +532,13 @@ class KotlinInputAstVisitor(
       val nameTag = genSym() // allows adjusting arguments indentation if a break will be made
       for ((index, ktExpression) in parts.withIndex()) {
         if (ktExpression is KtQualifiedExpression) {
-          builder.breakOp(Doc.FillMode.UNIFIED, "", ZERO, Optional.of(nameTag))
+          val fillMode =
+              if (shouldForceBreakBeforeSelectorCall(ktExpression)) {
+                Doc.FillMode.FORCED
+              } else {
+                Doc.FillMode.UNIFIED
+              }
+          builder.breakOp(fillMode, "", ZERO, Optional.of(nameTag))
         }
         repeat(groupingInfos[index].groupOpenCount) { builder.open(ZERO) }
         when (ktExpression) {
@@ -589,6 +595,41 @@ class KotlinInputAstVisitor(
         }
       }
     }
+  }
+
+  private fun shouldForceBreakBeforeSelectorCall(expression: KtQualifiedExpression): Boolean {
+    val selectorExpression = expression.selectorExpression as? KtCallExpression ?: return false
+    if (expression.receiverExpression !is KtCallExpression) {
+      return false
+    }
+    if (
+        selectorExpression.valueArguments.isEmpty() &&
+            selectorExpression.lambdaArguments.isEmpty()
+    ) {
+      return false
+    }
+    val length =
+        expression.receiverExpression.textLength +
+            expression.operationSign.value.length +
+            selectorExpression.callHeaderLength()
+    return length > options.maxWidth
+  }
+
+  private fun KtCallExpression.callHeaderLength(): Int {
+    var length = calleeExpression?.textLength ?: 0
+    length += typeArgumentList?.textLength ?: 0
+    length += valueArgumentList?.textLength ?: 0
+    if (lambdaArguments.isNotEmpty()) {
+      length += 1 + lambdaArguments.single().compactHeaderLength()
+    }
+    return length
+  }
+
+  private fun KtLambdaArgument.compactHeaderLength(): Int {
+    val text = getArgumentExpression()?.text ?: return textLength
+    val firstLine = text.lineSequence().firstOrNull() ?: return 0
+    val singleLine = !text.contains('\n')
+    return if (singleLine) firstLine.length else "{".length
   }
 
   /**

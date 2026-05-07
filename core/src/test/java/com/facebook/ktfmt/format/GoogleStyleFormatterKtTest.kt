@@ -1320,6 +1320,19 @@ class GoogleStyleFormatterKtTest {
       )
 
   @Test
+  fun `prefer breaking chain before call arguments`() =
+      assertFormatted(
+          """
+          |fun f() {
+          |  val result =
+          |    sequence(Person("alice", 25), Person("bob", 20), Person("charlie", 30))
+          |      .ktMap("MapExtractName") { it.name }
+          |}
+          |"""
+              .trimMargin(),
+      )
+
+  @Test
   fun `lambda assigned to variable does not break before brace`() =
       assertFormatted(
           """
