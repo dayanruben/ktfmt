@@ -4266,6 +4266,33 @@ class FormatterTest {
       )
 
   @Test
+  fun `field annotations with arguments are split before declaration`() {
+    val code =
+        """
+        |class Test {
+        |  @Autowired(required = false) @Nullable private lateinit var bar: Bar
+        |
+        |  @Autowired @Nullable private lateinit var foo: Foo
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |class Test {
+        |  @Autowired(required = false)
+        |  @Nullable
+        |  private lateinit var bar: Bar
+        |
+        |  @Autowired @Nullable private lateinit var foo: Foo
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code).isEqualTo(expected)
+  }
+
+  @Test
   fun `when annotations cause line breaks, and constant has no type dont break before value`() =
       assertFormatted(
           """
@@ -5993,7 +6020,8 @@ class FormatterTest {
           |class FooTest {
           |  @get:Rule val exceptionRule: ExpectedException = ExpectedException.none()
           |
-          |  @set:Magic(name = "Jane") var field: String
+          |  @set:Magic(name = "Jane")
+          |  var field: String
           |}
           |"""
               .trimMargin()

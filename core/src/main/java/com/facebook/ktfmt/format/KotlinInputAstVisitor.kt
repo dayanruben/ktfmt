@@ -1380,7 +1380,11 @@ class KotlinInputAstVisitor(
       builder.blankLineWanted(OpsBuilder.BlankLineWanted.conditional(verticalAnnotationBreak))
     }
 
-    visit(modifiers)
+    if (isField && modifiers != null && hasAnnotationWithArguments(modifiers)) {
+      visitFieldModifierListWithVerticalAnnotations(modifiers)
+    } else {
+      visit(modifiers)
+    }
     builder.block(ZERO) {
       builder.block(ZERO) {
         if (valOrVarKeyword != null) {
@@ -1526,6 +1530,43 @@ class KotlinInputAstVisitor(
             builder.fenceComments()
             visit(initializer)
           }
+        }
+      }
+    }
+  }
+
+  private fun hasAnnotationWithArguments(list: KtModifierList): Boolean =
+      list.node.children().any { child ->
+        when (val psi = child.psi) {
+          is KtAnnotationEntry -> psi.valueArgumentList != null
+          is KtAnnotation -> psi.entries.any { it.valueArgumentList != null }
+          else -> false
+        }
+      }
+
+  private fun visitFieldModifierListWithVerticalAnnotations(list: KtModifierList) {
+    builder.sync(list)
+    var onlyAnnotationsSoFar = true
+
+    for (child in list.node.children()) {
+      val psi = child.psi
+      if (psi is PsiWhiteSpace) {
+        continue
+      }
+
+      if (psi is KtContextReceiverList) {
+        visitContextReceiverList(psi)
+        continue
+      }
+
+      if (child.elementType is KtModifierKeywordToken) {
+        onlyAnnotationsSoFar = false
+        builder.token(child.text)
+        builder.space()
+      } else {
+        visit(psi)
+        if (onlyAnnotationsSoFar && psi !is KtAnnotation) {
+          builder.forcedBreak()
         }
       }
     }
