@@ -67,6 +67,51 @@ class FormatterTest {
       )
 
   @Test
+  fun `can emit tabs for leading indentation`() {
+    val code =
+        """
+        |fun f() { if (true) { println("yes") } }
+        |"""
+            .trimMargin()
+
+    assertThat(Formatter.format(META_FORMAT.copy(useTabsForIndentation = true), code))
+        .isEqualTo("fun f() {\n\tif (true) {\n\t\tprintln(\"yes\")\n\t}\n}\n")
+  }
+
+  @Test
+  fun `tab indentation preserves remainder spaces`() {
+    val code =
+        """
+        |fun f() {
+        |  val result =
+        |      listOf(
+        |          "one",
+        |          "two",
+        |      )
+        |}
+        |"""
+            .trimMargin()
+
+    val options =
+        FormattingOptions(
+            blockIndent = 4,
+            continuationIndent = 2,
+            useTabsForIndentation = true,
+        )
+
+    assertThat(Formatter.format(options, code))
+        .isEqualTo(
+            "fun f() {\n" +
+                "\tval result =\n" +
+                "\t  listOf(\n" +
+                "\t\t\"one\",\n" +
+                "\t\t\"two\",\n" +
+                "\t  )\n" +
+                "}\n"
+        )
+  }
+
+  @Test
   fun `call chains`() =
       assertFormatted(
           """

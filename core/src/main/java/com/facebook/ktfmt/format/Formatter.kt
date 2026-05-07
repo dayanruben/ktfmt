@@ -106,8 +106,36 @@ object Formatter {
         .let { prettyPrint(it, options, lineSeparator = "\n") }
         .let { addRedundantElements(it, options) }
         .let { MultilineStringFormatter(options.continuationIndent).format(it) }
+        .let {
+          if (options.useTabsForIndentation) convertLeadingIndentationToTabs(it, options) else it
+        }
         .let { convertLineSeparators(it, checkNotNull(Newlines.guessLineSeparator(kotlinCode))) }
         .let { if (shebang.isEmpty()) it else shebang + "\n" + it }
+  }
+
+  private fun convertLeadingIndentationToTabs(code: String, options: FormattingOptions): String {
+    if (options.blockIndent <= 0) {
+      return code
+    }
+    fun convertLine(line: String): String {
+      val leadingSpaces = line.indexOfFirst { it != ' ' }.let { if (it == -1) line.length else it }
+      val tabs = leadingSpaces / options.blockIndent
+      val remainingSpaces = leadingSpaces % options.blockIndent
+      return "\t".repeat(tabs) + " ".repeat(remainingSpaces) + line.substring(leadingSpaces)
+    }
+
+    val result = StringBuilder(code.length)
+    var lineStart = 0
+    while (lineStart <= code.length) {
+      val lineEnd = code.indexOf('\n', lineStart).let { if (it == -1) code.length else it }
+      result.append(convertLine(code.substring(lineStart, lineEnd)))
+      if (lineEnd == code.length) {
+        break
+      }
+      result.append('\n')
+      lineStart = lineEnd + 1
+    }
+    return result.toString()
   }
 
   /** prettyPrint reflows 'code' using google-java-format's engine. */

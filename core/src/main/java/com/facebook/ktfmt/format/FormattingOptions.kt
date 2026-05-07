@@ -62,10 +62,36 @@ data class FormattingOptions(
      * newline) decisions
      */
     val debuggingPrintOpsAfterFormatting: Boolean = false,
+
+    /**
+     * Whether ktfmt should convert leading indentation spaces to tabs after formatting.
+     *
+     * ktfmt still computes formatting in spaces; this only changes the emitted leading indentation.
+     * Each full [blockIndent] worth of leading spaces is emitted as one tab, and any remainder
+     * stays as spaces.
+     */
+    val useTabsForIndentation: Boolean = false,
 ) {
   companion object {
     const val DEFAULT_MAX_WIDTH: Int = 100
   }
+
+  constructor(
+      maxWidth: Int = DEFAULT_MAX_WIDTH,
+      blockIndent: Int,
+      continuationIndent: Int,
+      trailingCommaManagementStrategy: TrailingCommaManagementStrategy = COMPLETE,
+      removeUnusedImports: Boolean = true,
+      debuggingPrintOpsAfterFormatting: Boolean = false,
+  ) : this(
+      maxWidth = maxWidth,
+      blockIndent = blockIndent,
+      continuationIndent = continuationIndent,
+      trailingCommaManagementStrategy = trailingCommaManagementStrategy,
+      removeUnusedImports = removeUnusedImports,
+      debuggingPrintOpsAfterFormatting = debuggingPrintOpsAfterFormatting,
+      useTabsForIndentation = false,
+  )
 
   @Deprecated("Here just for retrocompatibility reasons. Will be removed on 1.0.0")
   constructor(
@@ -82,6 +108,7 @@ data class FormattingOptions(
       trailingCommaManagementStrategy = if (manageTrailingCommas) COMPLETE else NONE,
       removeUnusedImports = removeUnusedImports,
       debuggingPrintOpsAfterFormatting = debuggingPrintOpsAfterFormatting,
+      useTabsForIndentation = false,
   )
 
   internal val manageTrailingCommas: Boolean
