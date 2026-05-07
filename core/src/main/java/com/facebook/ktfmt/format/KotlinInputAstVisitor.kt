@@ -158,6 +158,10 @@ class KotlinInputAstVisitor(
   private val expressionBreakNegativeIndent: Indent.Const =
       Indent.Const.make(-options.continuationIndent, 1)
 
+  private val isKotlinlangStyle =
+      options.blockIndent == Formatter.KOTLINLANG_FORMAT.blockIndent &&
+          options.continuationIndent == Formatter.KOTLINLANG_FORMAT.continuationIndent
+
   /** A record of whether we have visited into an expression. */
   private val inExpression = ArrayDeque(ImmutableList.of(false))
 
@@ -1380,7 +1384,7 @@ class KotlinInputAstVisitor(
       builder.blankLineWanted(OpsBuilder.BlankLineWanted.conditional(verticalAnnotationBreak))
     }
 
-    visit(modifiers)
+    visitModifierList(modifiers, forceBreakAfterAnnotations = isField && isKotlinlangStyle)
     builder.block(ZERO) {
       builder.block(ZERO) {
         if (valOrVarKeyword != null) {
@@ -1643,7 +1647,10 @@ class KotlinInputAstVisitor(
         visitContextReceiverList(contextReceiverList)
       }
       if (modifierList != null) {
-        visitModifierList(modifierList)
+        visitModifierList(
+            modifierList,
+            forceBreakAfterAnnotations = isKotlinlangStyle,
+        )
       }
       val declarationKeyword = classOrObject.getDeclarationKeyword()
       if (declarationKeyword != null) {
@@ -1837,6 +1844,16 @@ class KotlinInputAstVisitor(
 
   /** For example `@Magic private final` */
   override fun visitModifierList(list: KtModifierList) {
+    visitModifierList(list, forceBreakAfterAnnotations = false)
+  }
+
+  private fun visitModifierList(
+      list: KtModifierList?,
+      forceBreakAfterAnnotations: Boolean,
+  ) {
+    if (list == null) {
+      return
+    }
     builder.sync(list)
     var onlyAnnotationsSoFar = true
 
@@ -1860,7 +1877,9 @@ class KotlinInputAstVisitor(
         visit(psi)
       }
 
-      if (onlyAnnotationsSoFar) {
+      if (onlyAnnotationsSoFar && forceBreakAfterAnnotations) {
+        builder.forcedBreak()
+      } else if (onlyAnnotationsSoFar) {
         builder.breakOp(Doc.FillMode.UNIFIED, " ", ZERO)
       } else {
         builder.space()

@@ -6000,6 +6000,55 @@ class FormatterTest {
       )
 
   @Test
+  fun `kotlinlang style keeps property use-site annotations on separate lines`() =
+      assertThatFormatting(
+              """
+              |class FooTest {
+              |    @get:Rule val benchmarkRule = BenchmarkRule()
+              |
+              |    @set:Magic(name = "Jane") var field: String
+              |}
+              |"""
+                  .trimMargin()
+          )
+          .withOptions(Formatter.KOTLINLANG_FORMAT)
+          .isEqualTo(
+              """
+              |class FooTest {
+              |    @get:Rule
+              |    val benchmarkRule = BenchmarkRule()
+              |
+              |    @set:Magic(name = "Jane")
+              |    var field: String
+              |}
+              |"""
+                  .trimMargin()
+          )
+
+  @Test
+  fun `kotlinlang style keeps class declaration annotations on separate lines`() =
+      assertThatFormatting(
+              """
+              |@Entity data class EntityWithEnum(@PrimaryKey val id: Long, val fruit: Fruit)
+              |
+              |@RunWith @Px class Test
+              |"""
+                  .trimMargin()
+          )
+          .withOptions(Formatter.KOTLINLANG_FORMAT)
+          .isEqualTo(
+              """
+              |@Entity
+              |data class EntityWithEnum(@PrimaryKey val id: Long, val fruit: Fruit)
+              |
+              |@RunWith
+              |@Px
+              |class Test
+              |"""
+                  .trimMargin()
+          )
+
+  @Test
   fun `handle annotations mixed with keywords since we cannot reorder them for now`() =
       assertFormatted(
           """
