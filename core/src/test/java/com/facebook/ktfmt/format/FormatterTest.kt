@@ -1676,6 +1676,89 @@ class FormatterTest {
   }
 
   @Test
+  fun `noinspection comment stays attached to sorted import`() {
+    val code =
+        """
+        |package com.facebook.ktfmt
+        |
+        |import com.example.y
+        |//noinspection BannedImport
+        |import com.example.x
+        |import com.example.z
+        |
+        |val value = x + y + z
+        |"""
+            .trimMargin()
+    val expected =
+        """
+        |package com.facebook.ktfmt
+        |
+        |//noinspection BannedImport
+        |import com.example.x
+        |import com.example.y
+        |import com.example.z
+        |
+        |val value = x + y + z
+        |"""
+            .trimMargin()
+    assertThatFormatting(code).isEqualTo(expected)
+  }
+
+  @Test
+  fun `noinspection comment before first import stays attached when import moves`() {
+    val code =
+        """
+        |package com.facebook.ktfmt
+        |
+        |//noinspection BannedImport
+        |import com.example.z
+        |import com.example.x
+        |import com.example.y
+        |
+        |val value = x + y + z
+        |"""
+            .trimMargin()
+    val expected =
+        """
+        |package com.facebook.ktfmt
+        |
+        |import com.example.x
+        |import com.example.y
+        |//noinspection BannedImport
+        |import com.example.z
+        |
+        |val value = x + y + z
+        |"""
+            .trimMargin()
+    assertThatFormatting(code).isEqualTo(expected)
+  }
+
+  @Test
+  fun `unused import removal removes attached noinspection comment`() {
+    val code =
+        """
+        |package com.facebook.ktfmt
+        |
+        |import com.example.used
+        |//noinspection BannedImport
+        |import com.example.unused
+        |
+        |val value = used
+        |"""
+            .trimMargin()
+    val expected =
+        """
+        |package com.facebook.ktfmt
+        |
+        |import com.example.used
+        |
+        |val value = used
+        |"""
+            .trimMargin()
+    assertThatFormatting(code).isEqualTo(expected)
+  }
+
+  @Test
   fun `no redundant newlines when there are no imports`() =
       assertFormatted(
           """

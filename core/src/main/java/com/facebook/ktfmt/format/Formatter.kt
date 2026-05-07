@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.com.intellij.psi.PsiElementVisitor
 import org.jetbrains.kotlin.com.intellij.psi.PsiWhiteSpace
 import org.jetbrains.kotlin.psi.KtImportDirective
+import org.jetbrains.kotlin.psi.KtImportList
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 
@@ -165,13 +166,24 @@ object Formatter {
       return code
     }
 
+    val attachedImportComments =
+        importList.imports.associateWith { importDirective ->
+          importDirective.leadingImportSuppressionComments()
+        }
+    val attachedImportCommentStart =
+        attachedImportComments.values.flatten().minOfOrNull { it.startOffset }
+    val attachedImportCommentOffsets =
+        attachedImportComments.values.flatten().mapTo(mutableSetOf()) { it.startOffset }
+
     val commentList = mutableListOf<PsiElement>()
     // Find non-import elements; comments are moved, in order, to the top of the import list. Other
     // non-import elements throw a ParseError.
     var element = importList.firstChild
     while (element != null) {
       if (element is PsiComment) {
-        commentList.add(element)
+        if (element.startOffset !in attachedImportCommentOffsets) {
+          commentList.add(element)
+        }
       } else if (element !is KtImportDirective && element !is PsiWhiteSpace) {
         throw ParseError(
             "Imports not contiguous: " + element.text,
@@ -187,13 +199,63 @@ object Formatter {
             " " +
             if (importDirective.isAllUnder) "*" else ""
 
-    val sortedImports = importList.imports.sortedBy(::canonicalText).distinctBy(::canonicalText)
-    val importsWithComments = commentList + sortedImports
+    data class ImportBlock(
+        val importDirective: KtImportDirective,
+        val leadingComments: List<PsiComment>,
+    ) {
+      val text =
+          (leadingComments.map(PsiElement::getText) + importDirective.text).joinToString("\n")
+    }
+
+    val sortedImports =
+        importList.imports
+            .map { importDirective ->
+              ImportBlock(importDirective, attachedImportComments.getValue(importDirective))
+            }
+            .sortedBy { canonicalText(it.importDirective) }
+            .groupBy { canonicalText(it.importDirective) }
+            .values
+            .map { duplicateImports ->
+              duplicateImports
+                  .first()
+                  .copy(
+                      leadingComments =
+                          duplicateImports.flatMap(ImportBlock::leadingComments).distinctBy {
+                            it.startOffset
+                          }
+                  )
+            }
+    val importsWithComments =
+        commentList.map(PsiElement::getText) + sortedImports.map(ImportBlock::text)
 
     return code.replaceRange(
-        importList.startOffset,
+        minOf(importList.startOffset, attachedImportCommentStart ?: importList.startOffset),
         importList.endOffset,
-        importsWithComments.joinToString(separator = "\n") { imprt -> imprt.text } + "\n",
+        importsWithComments.joinToString(separator = "\n") + "\n",
     )
   }
+
+  private fun KtImportDirective.leadingImportSuppressionComments(): List<PsiComment> {
+    val comments = mutableListOf<PsiComment>()
+    var element = prevSibling ?: (parent as? KtImportList)?.prevSibling
+    while (true) {
+      if (element is PsiWhiteSpace) {
+        if (element.text.count { it == '\n' } > 1) {
+          break
+        }
+        element = element.prevSibling
+        continue
+      }
+      if (element is PsiComment && element.isImportSuppressionComment()) {
+        comments.add(element)
+        element = element.prevSibling
+        continue
+      }
+      break
+    }
+    return comments.asReversed()
+  }
+
+  private fun PsiComment.isImportSuppressionComment(): Boolean =
+      text.trimStart().startsWith("//noinspection")
 }

@@ -16,7 +16,9 @@
 
 package com.facebook.ktfmt.format
 
+import org.jetbrains.kotlin.com.intellij.psi.PsiComment
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.com.intellij.psi.PsiWhiteSpace
 import org.jetbrains.kotlin.kdoc.psi.impl.KDocImpl
 import org.jetbrains.kotlin.kdoc.psi.impl.KDocLink
 import org.jetbrains.kotlin.kdoc.psi.impl.KDocName
@@ -165,19 +167,23 @@ internal class RedundantImportDetector(val enabled: Boolean) {
     val identifierCounts =
         importCleanUpCandidates.groupBy { it.identifier }.mapValues { it.value.size }
 
-    return importCleanUpCandidates.filter { importCandidate ->
-      val isUsed = importCandidate.identifier in usedReferences
-      val importedFqName = importCandidate.importedFqName
-      // For backtick-escaped full-path imports (e.g., import `foo.bar.baz`), the PSI creates
-      // a single-segment FqName whose short name contains dots. Its parent() returns ROOT,
-      // which would incorrectly match the default package. Detect and exclude this case.
-      val isBracketEscapedPath = importedFqName?.shortName()?.asString()?.contains('.') == true
-      val isFromThisPackage = !isBracketEscapedPath && importedFqName?.parent() == thisPackage
-      val hasAlias = importCandidate.alias != null
-      val isOverload = requireNotNull(identifierCounts[importCandidate.identifier]) > 1
-      // Remove if...
-      !isUsed || (isFromThisPackage && !hasAlias && !isOverload)
-    }
+    return importCleanUpCandidates
+        .filter { importCandidate ->
+          val isUsed = importCandidate.identifier in usedReferences
+          val importedFqName = importCandidate.importedFqName
+          // For backtick-escaped full-path imports (e.g., import `foo.bar.baz`), the PSI creates
+          // a single-segment FqName whose short name contains dots. Its parent() returns ROOT,
+          // which would incorrectly match the default package. Detect and exclude this case.
+          val isBracketEscapedPath = importedFqName?.shortName()?.asString()?.contains('.') == true
+          val isFromThisPackage = !isBracketEscapedPath && importedFqName?.parent() == thisPackage
+          val hasAlias = importCandidate.alias != null
+          val isOverload = requireNotNull(identifierCounts[importCandidate.identifier]) > 1
+          // Remove if...
+          !isUsed || (isFromThisPackage && !hasAlias && !isOverload)
+        }
+        .flatMap { importCandidate ->
+          importCandidate.leadingImportSuppressionComments() + importCandidate
+        }
   }
 
   /** The imported short name, possibly an alias name, if any. */
@@ -190,4 +196,28 @@ internal class RedundantImportDetector(val enabled: Boolean) {
       val dotIndex = name.lastIndexOf('.')
       return if (dotIndex >= 0) name.substring(dotIndex + 1) else name
     }
+
+  private fun KtImportDirective.leadingImportSuppressionComments(): List<PsiComment> {
+    val comments = mutableListOf<PsiComment>()
+    var element = prevSibling ?: (parent as? KtImportList)?.prevSibling
+    while (true) {
+      if (element is PsiWhiteSpace) {
+        if (element.text.count { it == '\n' } > 1) {
+          break
+        }
+        element = element.prevSibling
+        continue
+      }
+      if (element is PsiComment && element.isImportSuppressionComment()) {
+        comments.add(element)
+        element = element.prevSibling
+        continue
+      }
+      break
+    }
+    return comments
+  }
+
+  private fun PsiComment.isImportSuppressionComment(): Boolean =
+      text.trimStart().startsWith("//noinspection")
 }
