@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid
+import org.jetbrains.kotlin.psi.KtValueArgumentList
 import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 
@@ -88,9 +89,11 @@ class Tokenizer(private val fileText: String, val file: KtFile) : KtTreeVisitorV
                 originalText = originalText,
                 text = elementText,
                 position = startIndex,
-                column = 0,
+                column = columnAt(startIndex),
                 isToken = treatAsToken,
                 kind = KtTokens.EOF,
+                originalLineIndent = lineIndentAt(startIndex),
+                alignWrappedLineCommentToLineIndent = element.parent is KtValueArgumentList,
             ),
         )
         index++
@@ -106,9 +109,10 @@ class Tokenizer(private val fileText: String, val file: KtFile) : KtTreeVisitorV
                     ),
                 text = elementText,
                 position = startIndex,
-                column = 0,
+                column = columnAt(startIndex),
                 isToken = true,
                 kind = KtTokens.EOF,
+                originalLineIndent = lineIndentAt(startIndex),
             ),
         )
         index++
@@ -129,9 +133,10 @@ class Tokenizer(private val fileText: String, val file: KtFile) : KtTreeVisitorV
                         ),
                     text = text,
                     position = startIndex + matcher.start(),
-                    column = 0,
+                    column = columnAt(startIndex + matcher.start()),
                     isToken = false,
                     kind = KtTokens.EOF,
+                    originalLineIndent = lineIndentAt(startIndex + matcher.start()),
                 ),
             )
           }
@@ -142,9 +147,10 @@ class Tokenizer(private val fileText: String, val file: KtFile) : KtTreeVisitorV
                   originalText = originalText,
                   text = elementText,
                   position = startIndex,
-                  column = 0,
+                  column = columnAt(startIndex),
                   isToken = true,
                   kind = KtTokens.EOF,
+                  originalLineIndent = lineIndentAt(startIndex),
               ),
           )
           index++
@@ -152,5 +158,16 @@ class Tokenizer(private val fileText: String, val file: KtFile) : KtTreeVisitorV
       }
     }
     super.visitElement(element)
+  }
+
+  private fun columnAt(offset: Int): Int = StringUtil.offsetToLineColumn(fileText, offset).column
+
+  private fun lineIndentAt(offset: Int): Int {
+    val lineStart = fileText.lastIndexOf('\n', (offset - 1).coerceAtLeast(0)) + 1
+    var indent = 0
+    while (lineStart + indent < fileText.length && fileText[lineStart + indent] == ' ') {
+      indent++
+    }
+    return indent
   }
 }

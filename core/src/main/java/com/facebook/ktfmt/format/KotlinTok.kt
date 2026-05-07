@@ -29,6 +29,8 @@ class KotlinTok(
     private val column: Int,
     val isToken: Boolean,
     private val kind: KtToken,
+    val originalLineIndent: Int = column,
+    val alignWrappedLineCommentToLineIndent: Boolean = false,
 ) : Input.Tok {
 
   override fun getIndex(): Int = index

@@ -8953,6 +8953,43 @@ class FormatterTest {
   }
 
   @Test
+  fun `wrapped trailing argument line comment is stable after one format`() {
+    val input =
+        """
+        |class SomeClass {
+        |  private fun someFunction(
+        |  ) {
+        |    ListAssert(blah)
+        |      .blahBlahBlah(
+        |        "abcdefghijklmnopqurstuvw",
+        |        "alsdkf jlasjf lkasjdlsadfjl" // A long comment that gets wrapped and then reformatted again after running ktfmt twice, what!!!!
+        |      ).isEqualTo(someOtherThing)
+        |  }
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |class SomeClass {
+        |  private fun someFunction() {
+        |    ListAssert(blah)
+        |        .blahBlahBlah(
+        |            "abcdefghijklmnopqurstuvw",
+        |            "alsdkf jlasjf lkasjdlsadfjl" // A long comment that gets wrapped and then reformatted
+        |            // again after running ktfmt twice, what!!!!
+        |            )
+        |        .isEqualTo(someOtherThing)
+        |  }
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(input).isEqualTo(expected)
+    assertFormatted(expected)
+  }
+
+  @Test
   fun `comment formatting respects max width`() {
     val code =
         """

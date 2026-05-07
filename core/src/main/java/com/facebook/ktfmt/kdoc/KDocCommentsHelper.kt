@@ -35,6 +35,7 @@
 
 package com.facebook.ktfmt.kdoc
 
+import com.facebook.ktfmt.format.KotlinTok
 import com.google.common.base.CharMatcher
 import com.google.common.base.Strings
 import com.google.googlejavaformat.CommentsHelper
@@ -71,7 +72,7 @@ class KDocCommentsHelper(private val lineSeparator: String, private val maxLineL
       lines.add(CharMatcher.whitespace().trimTrailingFrom(it.next()))
     }
     return if (tok.isSlashSlashComment) {
-      indentLineComments(lines, column0)
+      indentLineComments(lines, column0, continuationColumn(tok, column0))
     } else if (javadocShaped(lines)) {
       indentJavadoc(lines, column0)
     } else {
@@ -110,15 +111,32 @@ class KDocCommentsHelper(private val lineSeparator: String, private val maxLineL
   }
 
   // Wraps and re-indents line comments.
-  private fun indentLineComments(lines: List<String>, column0: Int): String {
+  private fun indentLineComments(
+      lines: List<String>,
+      column0: Int,
+      continuationColumn: Int = column0,
+  ): String {
     val wrappedLines = wrapLineComments(lines, column0)
     val builder = StringBuilder()
     builder.append(wrappedLines[0].trim())
-    val indentString = Strings.repeat(" ", column0)
+    val indentString = Strings.repeat(" ", continuationColumn)
     for (i in 1 until wrappedLines.size) {
       builder.append(lineSeparator).append(indentString).append(wrappedLines[i].trim())
     }
     return builder.toString()
+  }
+
+  private fun continuationColumn(tok: Tok, column0: Int): Int {
+    if (
+        tok !is KotlinTok ||
+            !tok.alignWrappedLineCommentToLineIndent ||
+            tok.getColumn() <= tok.originalLineIndent
+    ) {
+      return column0
+    }
+    // Preserve the formatter's shift of the surrounding argument while avoiding inline comment
+    // alignment for wrapped continuation lines.
+    return tok.originalLineIndent + column0 - tok.getColumn()
   }
 
   private fun wrapLineComments(lines: List<String>, column0: Int): List<String> {
