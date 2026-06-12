@@ -1611,7 +1611,7 @@ class KotlinInputAstVisitor(
     builder.breakOp(Doc.FillMode.INDEPENDENT, " ", expressionBreakIndent, Optional.of(breakToExpr))
 
     var carry = expr
-    var tryOneLineFunctionalInterfaceConstructor = false
+    var functionalInterfaceConstructorCall: KtCallExpression? = null
     if (carry is KtQualifiedExpression && carry.receiverExpression is KtSimpleNameExpression) {
       visit(carry.receiverExpression)
       builder.token(carry.operationSign.value)
@@ -1621,7 +1621,7 @@ class KotlinInputAstVisitor(
       visit(carry.calleeExpression)
       builder.space()
       if (isFunctionalInterfaceConstructor(carry)) {
-        tryOneLineFunctionalInterfaceConstructor = true
+        functionalInterfaceConstructorCall = carry
       }
       carry = carry.lambdaArguments[0].getArgumentExpression()
     }
@@ -1631,8 +1631,11 @@ class KotlinInputAstVisitor(
     }
     if (carry is KtLambdaExpression) {
       if (
-          tryOneLineFunctionalInterfaceConstructor &&
-              tryVisitOneLineFunctionalInterfaceConstructorLambda(carry)
+          functionalInterfaceConstructorCall != null &&
+              tryVisitOneLineFunctionalInterfaceConstructorLambda(
+                  checkNotNull(functionalInterfaceConstructorCall),
+                  carry,
+              )
       ) {
         return
       }
@@ -1647,7 +1650,8 @@ class KotlinInputAstVisitor(
       callExpression.calleeExpression?.text?.firstOrNull()?.isUpperCase() == true
 
   private fun tryVisitOneLineFunctionalInterfaceConstructorLambda(
-      lambdaExpression: KtLambdaExpression
+      callExpression: KtCallExpression,
+      lambdaExpression: KtLambdaExpression,
   ): Boolean {
     val bodyExpression = lambdaExpression.bodyExpression ?: fail()
     val expressionStatements = bodyExpression.children
@@ -1656,7 +1660,8 @@ class KotlinInputAstVisitor(
             expressionStatements.first() is KtReturnExpression ||
             bodyExpression.startsWithComment() ||
             bodyExpression.children().any { it is PsiComment } ||
-            lambdaExpression.functionLiteral.valueParameterList?.trailingComma != null
+            lambdaExpression.functionLiteral.valueParameterList?.trailingComma != null ||
+            !functionalInterfaceConstructorFitsOneLine(callExpression, lambdaExpression)
     ) {
       return false
     }
@@ -1681,6 +1686,18 @@ class KotlinInputAstVisitor(
     builder.space()
     builder.token("}", blockIndent)
     return true
+  }
+
+  private fun functionalInterfaceConstructorFitsOneLine(
+      callExpression: KtCallExpression,
+      lambdaExpression: KtLambdaExpression,
+  ): Boolean {
+    val callHead =
+        (callExpression.calleeExpression?.text.orEmpty() +
+                callExpression.typeArgumentList?.text.orEmpty())
+            .trim()
+    val lambdaText = lambdaExpression.text.trim().replace(Regex("\\s+"), " ")
+    return options.continuationIndent + callHead.length + 1 + lambdaText.length <= options.maxWidth
   }
 
   override fun visitClassOrObject(classOrObject: KtClassOrObject) {
