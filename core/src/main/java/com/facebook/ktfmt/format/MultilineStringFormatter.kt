@@ -32,6 +32,8 @@ private const val TQ = "\"\"\""
  */
 class MultilineStringFormatter(val continuationIndentSize: Int) {
   fun format(code: String): String {
+    if (!couldContainMultilineTrimmedString(code)) return code
+
     val result = StringBuilder(code)
     val multilineStringList =
         getMultilineTrimmedStringList(code)
@@ -105,28 +107,33 @@ class MultilineStringFormatter(val continuationIndentSize: Int) {
 
   @VisibleForTesting
   internal fun getMultilineTrimmedStringList(code: String): List<MultilineTrimmedString> {
+    if (!couldContainMultilineTrimmedString(code)) return emptyList()
+
     val file = Parser.parse(code)
     val strings = mutableListOf<MultilineTrimmedString>()
+    var lineMap: LineMap? = null
+
+    fun lineMap(): LineMap = lineMap ?: LineMap(code).also { lineMap = it }
+
     file.accept(
         object : KtTreeVisitorVoid() {
           override fun visitQualifiedExpression(expression: KtQualifiedExpression) {
             super.visitQualifiedExpression(expression)
             val receiver = expression.receiverExpression
             if (receiver !is KtStringTemplateExpression) return
-            val isDollarString = receiver.text.startsWith("$$")
-            val selectorExpression = expression.selectorExpression?.text.orEmpty().trim()
-            val isTrimMargin = selectorExpression.startsWith("trimMargin()")
-            val isTrimIndent = selectorExpression.startsWith("trimIndent()")
+            val stringOffset = receiver.startOffset
+            val isDollarString = code.startsWith("$$", stringOffset)
+            val selectorExpression = expression.selectorExpression ?: return
+            val selectorText = selectorExpression.text.trim()
+            val isTrimMargin = selectorText.startsWith("trimMargin()")
+            val isTrimIndent = selectorText.startsWith("trimIndent()")
             if (isTrimIndent || isTrimMargin) {
               // -1 here to account for the space after the dot
-              val trimOffset = checkNotNull(expression.selectorExpression).startOffset - 1
-              val stringOffset = receiver.startOffset
-              val lineStart = code.substring(0, stringOffset).lines().lastIndex
-              val lineEnd = code.substring(0, trimOffset).lines().lastIndex
-              val indentCount =
-                  code.substring(0, stringOffset).lines().last().substringBefore(TQ).let {
-                    it.length - it.trimStart().length
-                  }
+              val trimOffset = selectorExpression.startOffset - 1
+              val lineMap = lineMap()
+              val lineStart = lineMap.lineIndexAt(stringOffset)
+              val lineEnd = lineMap.lineIndexAt(trimOffset)
+              val indentCount = lineMap.indentCountAt(stringOffset)
               // Collect comments between the closing """ and the .trimX() call
               val comments = mutableListOf<String>()
               var child = receiver.nextSibling
@@ -141,7 +148,7 @@ class MultilineStringFormatter(val continuationIndentSize: Int) {
                       usesTrimMargin = isTrimMargin,
                       isDollarString = isDollarString,
                       indentCount = indentCount,
-                      lines = code.lines().subList(lineStart, lineEnd + 1),
+                      lines = lineMap.linesBetween(lineStart, lineEnd),
                       lineStart = lineStart,
                       lineEnd = lineEnd,
                       openStringOffset = stringOffset,
@@ -157,6 +164,91 @@ class MultilineStringFormatter(val continuationIndentSize: Int) {
         }
     )
     return strings.toList()
+  }
+
+  private fun couldContainMultilineTrimmedString(code: String): Boolean =
+      TQ in code && ("trimIndent" in code || "trimMargin" in code)
+}
+
+private class LineMap(private val code: String) {
+  private val lineStarts: IntArray = lineStarts(code)
+
+  fun lineIndexAt(offset: Int): Int {
+    var low = 0
+    var high = lineStarts.lastIndex
+    while (low <= high) {
+      val mid = (low + high).ushr(1)
+      val lineStart = lineStarts[mid]
+      if (lineStart <= offset) {
+        low = mid + 1
+      } else {
+        high = mid - 1
+      }
+    }
+    return high
+  }
+
+  fun indentCountAt(offset: Int): Int {
+    val lineStart = lineStarts[lineIndexAt(offset)]
+    var index = lineStart
+    while (index < offset && code[index].isWhitespace()) {
+      index++
+    }
+    return index - lineStart
+  }
+
+  fun linesBetween(lineStart: Int, lineEnd: Int): List<String> =
+      buildList(lineEnd - lineStart + 1) {
+        for (lineIndex in lineStart..lineEnd) {
+          add(lineText(lineIndex))
+        }
+      }
+
+  private fun lineText(lineIndex: Int): String {
+    val start = lineStarts[lineIndex]
+    var end =
+        if (lineIndex == lineStarts.lastIndex) {
+          code.length
+        } else {
+          lineStarts[lineIndex + 1]
+        }
+    if (end > start && code[end - 1] == '\n') {
+      end--
+      if (end > start && code[end - 1] == '\r') {
+        end--
+      }
+    } else if (end > start && code[end - 1] == '\r') {
+      end--
+    }
+    return code.substring(start, end)
+  }
+
+  private companion object {
+    fun lineStarts(code: String): IntArray {
+      val starts = mutableListOf(0)
+      var index = 0
+      while (index < code.length) {
+        when (code[index]) {
+          '\r' -> {
+            index++
+            if (index < code.length && code[index] == '\n') {
+              index++
+            }
+            if (index < code.length) {
+              starts.add(index)
+            }
+          }
+          '\n' -> {
+            index++
+            if (index < code.length) {
+              starts.add(index)
+            }
+          }
+          else -> index++
+        }
+      }
+      return starts.toIntArray()
+    }
   }
 }
 

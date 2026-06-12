@@ -24,6 +24,21 @@ class MultilineStringFormatterTest {
   private val TQ = "\"\"\""
 
   @Test
+  fun `format skips clear non-candidates without parsing`() {
+    val code = "fun broken( = trimIndent()"
+
+    assertThat(MultilineStringFormatter(4).format(code)).isEqualTo(code)
+  }
+
+  @Test
+  fun `getMultilineTrimmedStringList skips clear non-candidates without parsing`() {
+    val formatter = MultilineStringFormatter(4)
+
+    assertThat(formatter.getMultilineTrimmedStringList("fun broken( = trimMargin()")).isEmpty()
+    assertThat(formatter.getMultilineTrimmedStringList("val text = $TQ")).isEmpty()
+  }
+
+  @Test
   fun `MultilineTrimmedString validate basic properties`() {
     with(
         multilineTrimmedStringFromLines(
