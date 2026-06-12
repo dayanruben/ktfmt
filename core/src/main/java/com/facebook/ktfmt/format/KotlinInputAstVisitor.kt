@@ -241,10 +241,9 @@ class KotlinInputAstVisitor(
     val typeArgumentList = type.typeArgumentList
     if (typeArgumentList != null) {
       if (
-          preserveSingleTypeArgumentListsDepth > 0 &&
-              typeArgumentList.canPreserveSingleTypeArgumentList()
+          preserveSingleTypeArgumentListsDepth > 0 && typeArgumentList.canPreserveTypeArgumentList()
       ) {
-        visitSingleTypeArgumentList(typeArgumentList)
+        visitPreservedTypeArgumentList(typeArgumentList)
       } else {
         builder.block(expressionBreakIndent) { visit(typeArgumentList) }
       }
@@ -799,7 +798,7 @@ class KotlinInputAstVisitor(
                     typeArgumentList != null &&
                     typeArgumentList.canPreserveSingleTypeArgumentList()
             ) {
-              visitSingleTypeArgumentList(typeArgumentList)
+              visitPreservedTypeArgumentList(typeArgumentList)
             } else {
               visit(typeArgumentList)
             }
@@ -827,12 +826,20 @@ class KotlinInputAstVisitor(
   private fun KtTypeArgumentList.canPreserveSingleTypeArgumentList(): Boolean =
       arguments.size == 1 && trailingComma == null
 
-  private fun visitSingleTypeArgumentList(typeArgumentList: KtTypeArgumentList) {
+  private fun KtTypeArgumentList.canPreserveTypeArgumentList(): Boolean = trailingComma == null
+
+  private fun visitPreservedTypeArgumentList(typeArgumentList: KtTypeArgumentList) {
     builder.sync(typeArgumentList)
     builder.token("<")
     preserveSingleTypeArgumentListsDepth++
     try {
-      visit(typeArgumentList.arguments.single())
+      typeArgumentList.arguments.forEachIndexed { index, argument ->
+        if (index > 0) {
+          builder.token(",")
+          builder.space()
+        }
+        visit(argument)
+      }
     } finally {
       preserveSingleTypeArgumentListsDepth--
     }

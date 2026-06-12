@@ -159,6 +159,44 @@ class FormatterTest {
   }
 
   @Test
+  fun `qualified call from issue 207 breaks before selector instead of chevrons`() {
+    val code =
+        """
+        |class CharactersTest {
+        |  @Test
+        |  fun characters_test() {
+        |    launchFragmentWithNavigation<CharactersFragment> {
+        |      with(binding) {
+        |        recyclerViewCharacters.adapter.shouldBeTypeOf<ListAdapter<Character, CharacterItemBinding>>()
+        |      }
+        |    }
+        |  }
+        |}
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |class CharactersTest {
+        |  @Test
+        |  fun characters_test() {
+        |    launchFragmentWithNavigation<CharactersFragment> {
+        |      with(binding) {
+        |        recyclerViewCharacters.adapter
+        |            .shouldBeTypeOf<ListAdapter<Character, CharacterItemBinding>>()
+        |      }
+        |    }
+        |  }
+        |}
+        |"""
+            .trimMargin()
+
+    assertThatFormatting(code)
+        .withOptions(defaultTestFormattingOptions.copy(maxWidth = 75))
+        .isEqualTo(expected)
+  }
+
+  @Test
   fun `line breaks in function arguments`() =
       assertFormatted(
           """
