@@ -40,44 +40,43 @@ fun printOps(ops: ImmutableList<Op>) {
   println("Ops: ")
   var indent = 0
   for (op in ops) {
-    val line =
-        when (op) {
-          is OpenOp -> {
-            val matcher = OPENOP_STRING_FORM_REGEX.matcher(op.toString())
-            if (matcher.matches()) {
-              val opIndent = matcher.group(1)
-              "[ " + if (opIndent != "0") opIndent else ""
-            } else {
-              "[ $op"
-            }
-          }
-          is CloseOp -> "]"
-          is Doc.Token -> {
-            var result: String? = ""
-            val output =
-                object : Output() {
-                  override fun indent(indent: Int) = Unit
-
-                  override fun blankLine(k: Int, wanted: OpsBuilder.BlankLineWanted?) = Unit
-
-                  override fun markForPartialFormat(start: Input.Token?, end: Input.Token?) = Unit
-
-                  override fun getCommentsHelper(): CommentsHelper {
-                    throw Throwable()
-                  }
-
-                  override fun append(text: String?, range: Range<Int>?) {
-                    result = text
-                  }
-                }
-            op.write(output)
-            """"$result""""
-          }
-          else -> {
-            val result = op.toString()
-            if (result == "Space{}") "\" \"" else result
-          }
+    val line = when (op) {
+      is OpenOp -> {
+        val matcher = OPENOP_STRING_FORM_REGEX.matcher(op.toString())
+        if (matcher.matches()) {
+          val opIndent = matcher.group(1)
+          "[ " + if (opIndent != "0") opIndent else ""
+        } else {
+          "[ $op"
         }
+      }
+      is CloseOp -> "]"
+      is Doc.Token -> {
+        var result: String? = ""
+        val output =
+            object : Output() {
+              override fun indent(indent: Int) = Unit
+
+              override fun blankLine(k: Int, wanted: OpsBuilder.BlankLineWanted?) = Unit
+
+              override fun markForPartialFormat(start: Input.Token?, end: Input.Token?) = Unit
+
+              override fun getCommentsHelper(): CommentsHelper {
+                throw Throwable()
+              }
+
+              override fun append(text: String?, range: Range<Int>?) {
+                result = text
+              }
+            }
+        op.write(output)
+        """"$result""""
+      }
+      else -> {
+        val result = op.toString()
+        if (result == "Space{}") "\" \"" else result
+      }
+    }
     if (op is CloseOp) {
       indent--
     }

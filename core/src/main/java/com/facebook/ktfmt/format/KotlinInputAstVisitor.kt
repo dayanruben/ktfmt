@@ -606,13 +606,12 @@ class KotlinInputAstVisitor(
     var node: KtExpression? = expression
     while (node != null) {
       parts.addFirst(node)
-      node =
-          when (node) {
-            is KtQualifiedExpression -> node.receiverExpression
-            is KtArrayAccessExpression -> node.arrayExpression
-            is KtPostfixExpression -> node.baseExpression
-            else -> null
-          }
+      node = when (node) {
+        is KtQualifiedExpression -> node.receiverExpression
+        is KtArrayAccessExpression -> node.arrayExpression
+        is KtPostfixExpression -> node.baseExpression
+        else -> null
+      }
     }
 
     return parts.toList()
@@ -2182,14 +2181,13 @@ class KotlinInputAstVisitor(
 
       var prev: PsiElement? = null
       for (curr in members) {
-        val blankLineBetweenMembers =
-            when {
-              prev == null -> OpsBuilder.BlankLineWanted.PRESERVE
-              prev !is KtProperty -> OpsBuilder.BlankLineWanted.YES
-              prev.getter != null || prev.setter != null -> OpsBuilder.BlankLineWanted.YES
-              curr is KtProperty -> OpsBuilder.BlankLineWanted.PRESERVE
-              else -> OpsBuilder.BlankLineWanted.YES
-            }
+        val blankLineBetweenMembers = when {
+          prev == null -> OpsBuilder.BlankLineWanted.PRESERVE
+          prev !is KtProperty -> OpsBuilder.BlankLineWanted.YES
+          prev.getter != null || prev.setter != null -> OpsBuilder.BlankLineWanted.YES
+          curr is KtProperty -> OpsBuilder.BlankLineWanted.PRESERVE
+          else -> OpsBuilder.BlankLineWanted.YES
+        }
         builder.blankLineWanted(blankLineBetweenMembers)
 
         builder.block(ZERO) { visit(curr) }

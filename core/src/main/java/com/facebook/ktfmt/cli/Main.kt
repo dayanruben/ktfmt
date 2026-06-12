@@ -81,18 +81,17 @@ class Main(
   }
 
   fun run(): Int {
-    val parsedArgs =
-        when (val processArgs = ParsedArgs.processArgs(inputArgs)) {
-          is ParseResult.Ok -> processArgs.parsedValue
-          is ParseResult.ShowMessage -> {
-            out.println(processArgs.message)
-            return EXIT_CODE_SUCCESS
-          }
-          is ParseResult.Error -> {
-            err.println(processArgs.errorMessage)
-            return EXIT_CODE_FAILURE
-          }
-        }
+    val parsedArgs = when (val processArgs = ParsedArgs.processArgs(inputArgs)) {
+      is ParseResult.Ok -> processArgs.parsedValue
+      is ParseResult.ShowMessage -> {
+        out.println(processArgs.message)
+        return EXIT_CODE_SUCCESS
+      }
+      is ParseResult.Error -> {
+        err.println(processArgs.errorMessage)
+        return EXIT_CODE_FAILURE
+      }
+    }
     if (parsedArgs.fileNames.isEmpty()) {
       err.println(USAGE)
       return EXIT_CODE_FAILURE

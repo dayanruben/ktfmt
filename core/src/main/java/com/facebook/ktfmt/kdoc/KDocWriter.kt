@@ -235,12 +235,11 @@ internal class KDocWriter(blockIndentCount: Int, private val maxLineLength: Int)
       requestedWhitespace = NONE
     }
 
-    val needWhitespace =
-        when (requestedWhitespace) {
-          WHITESPACE -> true
-          CONDITIONAL_WHITESPACE -> token.value.first().isLetterOrDigit()
-          else -> false
-        }
+    val needWhitespace = when (requestedWhitespace) {
+      WHITESPACE -> true
+      CONDITIONAL_WHITESPACE -> token.value.first().isLetterOrDigit()
+      else -> false
+    }
     /*
      * Write a newline if necessary to respect the line limit. (But if we're at the beginning of the
      * line, a newline won't help. Or it might help but only by separating "<p>veryverylongword,"

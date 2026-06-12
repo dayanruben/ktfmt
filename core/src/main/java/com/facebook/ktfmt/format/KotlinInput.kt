@@ -110,12 +110,11 @@ class KotlinInput(private val text: String, file: KtFile) : Input() {
           )
       )
     }
-    val expandedLength =
-        when {
-          length < 0 -> return EMPTY_RANGE
-          length == 0 -> 1 // 0 stands for "format the line under the cursor"
-          else -> length
-        }
+    val expandedLength = when {
+      length < 0 -> return EMPTY_RANGE
+      length == 0 -> 1 // 0 stands for "format the line under the cursor"
+      else -> length
+    }
     val enclosed =
         getPositionTokenMap()
             .subRangeMap(Range.closedOpen(offset, offset + expandedLength))
