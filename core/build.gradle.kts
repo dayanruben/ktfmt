@@ -137,6 +137,24 @@ tasks {
     }
   }
 
+  register("verifyStartScripts") {
+    val startScriptsTask = named<CreateStartScripts>("startScripts")
+    dependsOn(startScriptsTask)
+
+    doLast {
+      val scripts = startScriptsTask.get()
+      val requiredOption = "--sun-misc-unsafe-memory-access=allow"
+      check(requiredOption in scripts.unixScript.readText()) {
+        "Generated Unix ktfmt launcher must include $requiredOption"
+      }
+      check(requiredOption in scripts.windowsScript.readText()) {
+        "Generated Windows ktfmt launcher must include $requiredOption"
+      }
+    }
+  }
+
+  named("check") { dependsOn("verifyStartScripts") }
+
   // Sources
   register("sourcesJar", Jar::class) {
     archiveClassifier.set("sources")

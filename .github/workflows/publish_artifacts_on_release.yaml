@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.events.release.tag_name || inputs.release_tag || github.ref }}
+          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref }}
 
       - name: Publish IntelliJ plugin to JetBrains Marketplace
         run: ./gradlew :idea_plugin:publishPlugin --stacktrace --no-daemon
@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.events.release.tag_name || inputs.release_tag || github.ref }}
+          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref }}
 
       - id: install-secret-key
         name: Install gpg secret key
@@ -62,11 +62,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.events.release.tag_name || inputs.release_tag || github.ref }}
+          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref }}
 
       - name: Debug release tag
         run: |
-          echo "Release tag: ${{ github.events.release.tag_name || inputs.release_tag }}"
+          echo "Release tag: ${{ github.event.release.tag_name || inputs.release_tag }}"
 
       - name: Build CLI artifacts
         run: ./gradlew :ktfmt:jar :ktfmt:shadowJar :ktfmt:distZip :ktfmt:distTar --stacktrace --no-daemon
@@ -79,7 +79,7 @@ jobs:
       - name: Upload CLI artifacts to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.events.release.tag_name || inputs.release_tag }}
+          tag_name: ${{ github.event.release.tag_name || inputs.release_tag }}
           files: |
             core/build/libs/ktfmt-*.jar
             core/build/distributions/ktfmt-*
@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.events.release.tag_name || inputs.release_tag || github.ref }}
+          ref: ${{ github.event.release.tag_name || inputs.release_tag || github.ref }}
 
       - uses: actions/setup-node@v4
 
@@ -109,8 +109,8 @@ jobs:
           git config user.email ktfmt@facebook.com
           git config user.name ktfmt
 
-          rm -rf *
-          cp -R "$KTFMT_TMP_DIR"/* .
+          find . -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          cp -R "$KTFMT_TMP_DIR"/. .
 
           git add .
           git commit -m "Publish website"
