@@ -603,8 +603,7 @@ class KotlinInputAstVisitor(
       return false
     }
     if (
-        selectorExpression.valueArguments.isEmpty() &&
-            selectorExpression.lambdaArguments.isEmpty()
+        selectorExpression.valueArguments.isEmpty() && selectorExpression.lambdaArguments.isEmpty()
     ) {
       return false
     }
