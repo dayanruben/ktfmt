@@ -6039,7 +6039,11 @@ class FormatterTest {
           .isEqualTo(
               """
               |@Entity
-              |data class EntityWithEnum(@PrimaryKey val id: Long, val fruit: Fruit)
+              |data class EntityWithEnum(
+              |    @PrimaryKey
+              |    val id: Long,
+              |    val fruit: Fruit,
+              |)
               |
               |@RunWith
               |@Px

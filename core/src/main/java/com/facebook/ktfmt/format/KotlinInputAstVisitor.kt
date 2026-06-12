@@ -1384,7 +1384,13 @@ class KotlinInputAstVisitor(
       builder.blankLineWanted(OpsBuilder.BlankLineWanted.conditional(verticalAnnotationBreak))
     }
 
-    visitModifierList(modifiers, forceBreakAfterAnnotations = isField && isKotlinlangStyle)
+    val isConstructorPropertyParameter =
+        kind == DeclarationKind.PARAMETER && valOrVarKeyword != null
+    visitModifierList(
+        modifiers,
+        forceBreakAfterAnnotations =
+            isKotlinlangStyle && (isField || isConstructorPropertyParameter),
+    )
     builder.block(ZERO) {
       builder.block(ZERO) {
         if (valOrVarKeyword != null) {
