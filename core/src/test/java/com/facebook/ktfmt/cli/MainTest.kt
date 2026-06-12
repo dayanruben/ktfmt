@@ -284,6 +284,22 @@ class MainTest {
   }
 
   @Test
+  fun `use-tabs-for-indentation is passed to formatter (stdin)`() {
+    val code = "fun f() { if (true) { println(\"yes\") } }"
+
+    Main(
+            code.byteInputStream(),
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--use-tabs-for-indentation", "-"),
+        )
+        .run()
+
+    assertThat(out.toString(UTF_8))
+        .isEqualTo("fun f() {\n\tif (true) {\n\t\tprintln(\"yes\")\n\t}\n}\n")
+  }
+
+  @Test
   fun `expandArgsToFileNames - resolves 'kt' and 'kts' filenames only (recursively)`() {
     val f1 = root.resolve("1.kt")
     val f2 = root.resolve("2.kt")

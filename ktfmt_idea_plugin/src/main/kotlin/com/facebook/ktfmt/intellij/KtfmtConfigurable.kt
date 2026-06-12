@@ -102,6 +102,14 @@ class KtfmtConfigurable(project: Project) :
                     .component
           }
 
+          lateinit var useTabsForIndentation: JCheckBox
+          row {
+            useTabsForIndentation =
+                checkBox("Use tabs for indentation")
+                    .bindSelected(settings::customUseTabsForIndentation)
+                    .component
+          }
+
           lateinit var trailingCommaManagementStrategy: JComboBox<TrailingCommaManagementStrategy>
           row("Trailing commas management") {
             trailingCommaManagementStrategy =
@@ -134,6 +142,7 @@ class KtfmtConfigurable(project: Project) :
                           maxLineLength,
                           blockIndent,
                           continuationIndent,
+                          useTabsForIndentation,
                           trailingCommaManagementStrategy,
                           removeUnusedImports,
                       )
@@ -147,6 +156,7 @@ class KtfmtConfigurable(project: Project) :
                           maxLineLength,
                           blockIndent,
                           continuationIndent,
+                          useTabsForIndentation,
                           trailingCommaManagementStrategy,
                           removeUnusedImports,
                       )
@@ -160,6 +170,7 @@ class KtfmtConfigurable(project: Project) :
                           maxLineLength,
                           blockIndent,
                           continuationIndent,
+                          useTabsForIndentation,
                           trailingCommaManagementStrategy,
                           removeUnusedImports,
                       )
@@ -177,12 +188,14 @@ private fun FormattingOptions.updateFields(
     maxLineLength: JTextField,
     blockIndent: JTextField,
     continuationIndent: JTextField,
+    useTabsForIndentation: JCheckBox,
     trailingCommaManagementStrategy: JComboBox<TrailingCommaManagementStrategy>,
     removeUnusedImports: JCheckBox,
 ) {
   maxLineLength.text = maxWidth.toString()
   blockIndent.text = this.blockIndent.toString()
   continuationIndent.text = this.continuationIndent.toString()
+  useTabsForIndentation.isSelected = this.useTabsForIndentation
   trailingCommaManagementStrategy.selectedItem = this.trailingCommaManagementStrategy
   removeUnusedImports.isSelected = this.removeUnusedImports
 }

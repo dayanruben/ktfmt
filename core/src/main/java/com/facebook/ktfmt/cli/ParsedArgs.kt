@@ -84,6 +84,7 @@ data class ParsedArgs(
         |  --set-exit-if-changed             Sets exit code to 1 if any input file was not 
         |                                        formatted/touched
         |  --do-not-remove-unused-imports    Leaves all imports in place, even if not used
+        |  --use-tabs-for-indentation        Emit leading indentation with tabs
         |  --enable-editorconfig             Enable .editorconfig overrides for supported formatting options (limited)
         |                                        see https://github.com/facebook/ktfmt/blob/main/README.md
         |  --quiet                           Suppress all non-error output
@@ -111,6 +112,7 @@ data class ParsedArgs(
       var dryRun = false
       var setExitIfChanged = false
       var removeUnusedImports = true
+      var useTabsForIndentation: Boolean? = null
       var stdinName: String? = null
       var editorConfig = false
       var quiet = false
@@ -128,6 +130,7 @@ data class ParsedArgs(
           arg == "--dry-run" || arg == "-n" -> dryRun = true
           arg == "--set-exit-if-changed" -> setExitIfChanged = true
           arg == "--do-not-remove-unused-imports" -> removeUnusedImports = false
+          arg == "--use-tabs-for-indentation" -> useTabsForIndentation = true
           arg == "--enable-editorconfig" -> editorConfig = true
           arg == "--quiet" -> quiet = true
           arg.startsWith("--stdin-name=") ->
@@ -158,7 +161,11 @@ data class ParsedArgs(
       return ParseResult.Ok(
           ParsedArgs(
               fileNames,
-              formattingOptions.copy(removeUnusedImports = removeUnusedImports),
+              formattingOptions.copy(
+                  removeUnusedImports = removeUnusedImports,
+                  useTabsForIndentation =
+                      useTabsForIndentation ?: formattingOptions.useTabsForIndentation,
+              ),
               dryRun,
               setExitIfChanged,
               stdinName,

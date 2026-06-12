@@ -72,11 +72,13 @@ $ brew install ktfmt
 [Download the formatter](https://github.com/facebook/ktfmt/releases) and run it with:
 
 ```
-$ java -jar /path/to/ktfmt-<VERSION>-with-dependencies.jar [--kotlinlang-style | --google-style] [files...]
+$ java -jar /path/to/ktfmt-<VERSION>-with-dependencies.jar [--kotlinlang-style | --google-style] [--use-tabs-for-indentation] [files...]
 ```
 
 `--kotlinlang-style` makes `ktfmt` use a block indent of 4 spaces instead of 2.
 See below for details.
+
+`--use-tabs-for-indentation` makes `ktfmt` emit leading indentation with tabs instead of spaces.
 
 `--enable-editorconfig` makes `ktfmt` enable limited support to override the style's configuration based on the
 following subset of editorconfig properties:
@@ -84,6 +86,7 @@ following subset of editorconfig properties:
 | EditorConfig Property                                     | Description                                                                                      |
 |:----------------------------------------------------------|--------------------------------------------------------------------------------------------------|
 | `max_line_length`                                         | will override the max line width                                                                 |
+| `indent_style`                                            | `tab` emits leading indentation with tabs; `space` keeps leading indentation as spaces            |
 | `indent_size`<br/>*or `tab_width` if `indent_size = tab`* | will override the block indent                                                                   |
 | `ij_continuation_indent_size`                             | will override the continuation indent                                                            |
 | `ktfmt_trailing_comma_management_strategy`                | one of `none`, `only_add` or `complete`<br/>will override the trailing comma management strategy |

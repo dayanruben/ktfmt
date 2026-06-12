@@ -159,6 +159,41 @@ class EditorConfigResolverTest {
   }
 
   @Test
+  fun `overrides useTabsForIndentation when indent_style is tab`() {
+    val conf = root.resolve(".editorconfig")
+    conf.writeText(
+        """
+        root = true
+        [*.kt]
+        indent_style = tab
+        """
+            .trimIndent()
+    )
+
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    val resolved = EditorConfigResolver.resolveFormattingOptions(file, Formatter.GOOGLE_FORMAT)
+    assertThat(resolved).isEqualTo(Formatter.GOOGLE_FORMAT.copy(useTabsForIndentation = true))
+  }
+
+  @Test
+  fun `overrides useTabsForIndentation when indent_style is space`() {
+    val conf = root.resolve(".editorconfig")
+    conf.writeText(
+        """
+        root = true
+        [*.kt]
+        indent_style = space
+        """
+            .trimIndent()
+    )
+
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    val baseOptions = Formatter.GOOGLE_FORMAT.copy(useTabsForIndentation = true)
+    val resolved = EditorConfigResolver.resolveFormattingOptions(file, baseOptions)
+    assertThat(resolved).isEqualTo(Formatter.GOOGLE_FORMAT.copy(useTabsForIndentation = false))
+  }
+
+  @Test
   fun `overrides blockIndent based on editorconfig ij_kotlin_indent_size`() {
     val conf = root.resolve(".editorconfig")
     conf.writeText(

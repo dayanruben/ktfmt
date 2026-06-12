@@ -124,12 +124,22 @@ object EditorConfigResolver {
     val trailingCommaStrategy =
         getValue(commaManagementStrategy, baseOptions.trailingCommaManagementStrategy, false)
 
+    val indentStyle: PropertyType.IndentStyleValue? =
+        getValue(PropertyType.indent_style, null, false)
+    val useTabsForIndentation =
+        when (indentStyle) {
+          PropertyType.IndentStyleValue.tab -> true
+          PropertyType.IndentStyleValue.space -> false
+          null -> baseOptions.useTabsForIndentation
+        }
+
     val resolved =
         baseOptions.copy(
             maxWidth = maxWidth,
             blockIndent = blockIndent,
             continuationIndent = continuationIndent,
             trailingCommaManagementStrategy = trailingCommaStrategy,
+            useTabsForIndentation = useTabsForIndentation,
         )
     return resolved
   }

@@ -55,6 +55,7 @@ internal class KtfmtSettings(private val project: Project) :
             trailingCommaManagementStrategy =
                 state.customTrailingCommaManagementStrategy.toTrailingCommaManagementStrategy(),
             removeUnusedImports = state.customRemoveUnusedImports,
+            useTabsForIndentation = state.customUseTabsForIndentation,
         )
     set(customFormattingOptions) {
       state.applyCustomFormattingOptions(customFormattingOptions)
@@ -88,6 +89,12 @@ internal class KtfmtSettings(private val project: Project) :
     get() = state.customRemoveUnusedImports
     set(removeUnusedImports) {
       state.customRemoveUnusedImports = removeUnusedImports
+    }
+
+  var customUseTabsForIndentation: Boolean
+    get() = state.customUseTabsForIndentation
+    set(useTabsForIndentation) {
+      state.customUseTabsForIndentation = useTabsForIndentation
     }
 
   var isEnabled: Boolean
@@ -153,6 +160,8 @@ internal class KtfmtSettings(private val project: Project) :
             isDefault = { it == Formatter.META_FORMAT.trailingCommaManagementStrategy.name },
         )
     var customRemoveUnusedImports: Boolean by property(Formatter.META_FORMAT.removeUnusedImports)
+    var customUseTabsForIndentation: Boolean by
+        property(Formatter.META_FORMAT.useTabsForIndentation)
 
     fun applyCustomFormattingOptions(formattingOptions: FormattingOptions) {
       customMaxLineLength = formattingOptions.maxWidth
@@ -160,6 +169,7 @@ internal class KtfmtSettings(private val project: Project) :
       customContinuationIndent = formattingOptions.continuationIndent
       customTrailingCommaManagementStrategy = formattingOptions.trailingCommaManagementStrategy.name
       customRemoveUnusedImports = formattingOptions.removeUnusedImports
+      customUseTabsForIndentation = formattingOptions.useTabsForIndentation
 
       incrementModificationCount()
     }

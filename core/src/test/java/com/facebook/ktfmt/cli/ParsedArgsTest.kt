@@ -104,6 +104,13 @@ class ParsedArgsTest {
   }
 
   @Test
+  fun `parseOptions recognizes --use-tabs-for-indentation`() {
+    val parsed =
+        assertSucceeds(ParsedArgs.parseOptions(arrayOf("--use-tabs-for-indentation", "foo.kt")))
+    assertThat(parsed.formattingOptions.useTabsForIndentation).isTrue()
+  }
+
+  @Test
   fun `parseOptions recognizes --enable-editorconfig`() {
     val parsed = assertSucceeds(ParsedArgs.parseOptions(arrayOf("--enable-editorconfig", "foo.kt")))
     assertThat(parsed.editorConfig).isEqualTo(true)
