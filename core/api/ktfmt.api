@@ -276,11 +276,6 @@ public final class com/facebook/ktfmt/format/KotlinToken : com/google/googlejava
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/facebook/ktfmt/format/ModifierOrderer {
-	public static final field INSTANCE Lcom/facebook/ktfmt/format/ModifierOrderer;
-	public final fun reorderModifiers (Ljava/lang/String;)Ljava/lang/String;
-}
-
 public final class com/facebook/ktfmt/format/MultilineStringFormatter {
 	public fun <init> (I)V
 	public final fun format (Ljava/lang/String;)Ljava/lang/String;

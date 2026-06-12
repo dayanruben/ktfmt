@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.psi.psiUtil.endOffset
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
 
 /** Sorts consecutive Kotlin modifier keywords according to the Kotlin coding conventions. */
-object ModifierOrderer {
+internal object ModifierOrderer {
   private data class Replacement(val element: PsiElement, val text: String)
 
   private val MODIFIER_ORDER =
