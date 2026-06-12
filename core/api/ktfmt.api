@@ -250,9 +250,12 @@ public final class com/facebook/ktfmt/format/KotlinInputAstVisitor : org/jetbrai
 }
 
 public final class com/facebook/ktfmt/format/KotlinTok : com/google/googlejavaformat/Input$Tok {
-	public fun <init> (ILjava/lang/String;Ljava/lang/String;IIZLorg/jetbrains/kotlin/lexer/KtToken;)V
+	public fun <init> (ILjava/lang/String;Ljava/lang/String;IIZLorg/jetbrains/kotlin/lexer/KtToken;IZ)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;IIZLorg/jetbrains/kotlin/lexer/KtToken;IZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAlignWrappedLineCommentToLineIndent ()Z
 	public fun getColumn ()I
 	public fun getIndex ()I
+	public final fun getOriginalLineIndent ()I
 	public fun getOriginalText ()Ljava/lang/String;
 	public fun getPosition ()I
 	public fun getText ()Ljava/lang/String;
