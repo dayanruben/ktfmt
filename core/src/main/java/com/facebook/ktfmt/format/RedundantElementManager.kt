@@ -91,10 +91,13 @@ object RedundantElementManager {
     return result.toString()
   }
 
+  fun addRedundantElements(code: String, options: FormattingOptions): String =
+      addRedundantElements(code, options, respectMaxWidth = false)
+
   fun addRedundantElements(
       code: String,
       options: FormattingOptions,
-      respectMaxWidth: Boolean = false,
+      respectMaxWidth: Boolean,
   ): String {
     if (!options.manageTrailingCommas) {
       return code

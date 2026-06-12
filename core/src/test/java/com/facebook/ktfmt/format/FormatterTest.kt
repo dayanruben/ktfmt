@@ -9075,6 +9075,49 @@ class FormatterTest {
   }
 
   @Test
+  fun `managed trailing comma preserves max width in existing multiline argument list`() {
+    val code =
+        """
+        |fun testShowBillingErrorPaymentButton() =
+        |    composeExtension.use {
+        |        setContentWithTheme {
+        |            AccountScreen(
+        |                state =
+        |                    AccountUiState.default()
+        |                        .copy(billingPaymentState = PaymentState.Error.Billing),
+        |                uiSideEffect = MutableSharedFlow<AccountViewModel.UiSideEffect>().asSharedFlow()
+        |            )
+        |        }
+        |    }
+        |"""
+            .trimMargin()
+
+    val expected =
+        """
+        |fun testShowBillingErrorPaymentButton() = composeExtension.use {
+        |    setContentWithTheme {
+        |        AccountScreen(
+        |            state = AccountUiState.default().copy(billingPaymentState = PaymentState.Error.Billing),
+        |            uiSideEffect = MutableSharedFlow<AccountViewModel.UiSideEffect>().asSharedFlow(),
+        |        )
+        |    }
+        |}
+        |"""
+            .trimMargin()
+
+    val options =
+        Formatter.GOOGLE_FORMAT.copy(
+            maxWidth = 100,
+            blockIndent = 4,
+            continuationIndent = 4,
+            trailingCommaManagementStrategy = TrailingCommaManagementStrategy.ONLY_ADD,
+        )
+    val formatted = Formatter.format(options, code)
+    assertThat(formatted.lines().maxOf(String::length)).isAtMost(100)
+    assertThat(formatted).isEqualTo(expected)
+  }
+
+  @Test
   fun `single-line parameter list breaking to multi-line should add trailing comma in one pass`() {
     val code =
         """
