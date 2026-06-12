@@ -66,7 +66,7 @@ class HandlerTest {
     val event = APIGatewayProxyRequestEvent()
     event.body = """{}"""
     val response = Handler().handleRequest(event, null)
-    assertEquals("""{"source":"\n"}""", response)
+    assertEquals("""{"source":""}""", response)
   }
 
   @Test
