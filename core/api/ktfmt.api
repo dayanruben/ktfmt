@@ -307,7 +307,8 @@ public final class com/facebook/ktfmt/format/PsiUtilsKt {
 
 public final class com/facebook/ktfmt/format/RedundantElementManager {
 	public static final field INSTANCE Lcom/facebook/ktfmt/format/RedundantElementManager;
-	public final fun addRedundantElements (Ljava/lang/String;Lcom/facebook/ktfmt/format/FormattingOptions;)Ljava/lang/String;
+	public final fun addRedundantElements (Ljava/lang/String;Lcom/facebook/ktfmt/format/FormattingOptions;Z)Ljava/lang/String;
+	public static synthetic fun addRedundantElements$default (Lcom/facebook/ktfmt/format/RedundantElementManager;Ljava/lang/String;Lcom/facebook/ktfmt/format/FormattingOptions;ZILjava/lang/Object;)Ljava/lang/String;
 	public final fun dropRedundantElements (Ljava/lang/String;Lcom/facebook/ktfmt/format/FormattingOptions;)Ljava/lang/String;
 }
 
