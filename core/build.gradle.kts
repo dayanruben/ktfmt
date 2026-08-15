@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 import org.jetbrains.ktfmt.GenerateKtfmtFileTask
 
@@ -28,11 +28,6 @@ plugins {
   id("signing")
   id("ktfmt.ktfmt-file-generator")
   id("ktfmt.native-image")
-}
-
-repositories {
-  mavenLocal()
-  mavenCentral()
 }
 
 dependencies {
@@ -75,7 +70,7 @@ tasks {
 
   // Sources
   register("sourcesJar", Jar::class) {
-    archiveClassifier.set("sources")
+    archiveClassifier = "sources"
     from(sourceSets["main"].allSource)
   }
 
@@ -87,7 +82,7 @@ tasks {
     )
     dependsOn(dokkaJavadocTask)
     from(dokkaJavadocTask.flatMap { it.outputDirectory })
-    archiveClassifier.set("javadoc")
+    archiveClassifier = "javadoc"
   }
 
   // Fat jar
@@ -100,6 +95,8 @@ tasks {
 
 kotlin {
   @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }
+
+  compilerOptions { jvmDefault = JvmDefaultMode.NO_COMPATIBILITY }
 
   val javaVersion: String = rootProject.libs.versions.java.get()
   jvmToolchain(javaVersion.toInt())
@@ -135,7 +132,7 @@ publishing {
             "A program that reformats Kotlin source code to comply with the common community standard for Kotlin code conventions."
         url = "https://github.com/Kotlin/ktfmt"
         inceptionYear = "2019"
-        developers { developer { name = "Kotlin./g" } }
+        developers { developer { name = "Kotlin" } }
         licenses {
           license {
             name = "The Apache License, Version 2.0"
