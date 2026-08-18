@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.psi.KtDestructuringDeclarationEntry
 import org.jetbrains.kotlin.psi.KtDoWhileExpression
 import org.jetbrains.kotlin.psi.KtDynamicType
 import org.jetbrains.kotlin.psi.KtEnumEntry
+import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFileAnnotationList
 import org.jetbrains.kotlin.psi.KtFinallySection
@@ -434,7 +435,7 @@ interface KotlinAstFormatter {
    * ) {}
    * ```
    *
-   * @param hasTrailingComma if true, each element is placed on its own line (even if they could've
+   * @param forceMultiline if true, each element is placed on its own line (even if they could've
    *   fit in a single line) {}, and a trailing comma is emitted.
    *
    * Example:
@@ -443,16 +444,16 @@ interface KotlinAstFormatter {
    * b,
    * ```
    *
-   * @param wrapInBlock if true, place all the elements in a block. When there's no [leadingBreak],
-   *   this will be negatively indented. Note that the [prefix] and [postfix] aren't included in the
-   *   block.
-   * @param leadingBreak if true, break before the first element.
+   * @param wrapInBlock if true, place all the elements in a block. When there's no
+   *   [emitLeadingBreak], this will be negatively indented. Note that the [prefix] and [postfix]
+   *   aren't included in the block.
+   * @param emitLeadingBreak if true, break before the first element.
    * @param prefix if provided, emit this before the first element.
    * @param postfix if provided, emit this after the last element (or trailing comma) {}.
    * @param breakAfterPrefix if true, emit a break after [prefix], but before the start of the
    *   block.
    * @param breakBeforePostfix if true, place a break after the last element. Redundant when
-   *   [hasTrailingComma] is true.
+   *   [forceMultiline] is true.
    * @return a [BreakTag] which can tell you if a break was taken, but only when the list doesn't
    *   terminate in a negative closing indent.
    *
@@ -486,14 +487,46 @@ interface KotlinAstFormatter {
    */
   fun formatCommaSeparatedList(
       list: Iterable<PsiElement>,
-      hasTrailingComma: Boolean = false,
+      forceMultiline: Boolean = false,
       wrapInBlock: Boolean = true,
-      leadingBreak: Boolean = true,
+      emitLeadingBreak: Boolean = true,
       prefix: String? = null,
       postfix: String? = null,
       breakAfterPrefix: Boolean = true,
       breakBeforePostfix: Boolean = options.manageTrailingCommas,
   ): BreakTag?
+
+  /**
+   * Format the right-hand side of an initializer expression, i.e. the expression after `=`
+   * (inclusively)
+   */
+  fun formatInitializerExpression(initializer: KtExpression)
+
+  /** See [isLambdaOrScopingFunction] for examples. */
+  fun formatLambdaOrScopingFunction(expr: PsiElement?, emitLeadingBreak: Boolean = true)
+
+  /**
+   * Emit a `foo(\n ...,\n).bar().baz()` style chain whose innermost receiver is a block-like
+   * multiline call: render the receiver call normally (so its closing paren sits at the surrounding
+   * indent), then emit each `.selector` on its own line, indented by [expressionBreakIndent].
+   */
+  fun formatChainedBlockLikeCall(
+      expression: KtQualifiedExpression,
+      emitLeadingBreak: Boolean,
+  )
+
+  /**
+   * Emit `runnnnn { ... }.baz().qux()` style: render the innermost scoping-function receiver
+   * block-like (so the lambda braces sit at the surrounding indent), then emit each `.selector`
+   * after the closing brace as a chained continuation indented by [blockIndent].
+   *
+   * When the receiver lambda spans multiple lines in the source we force the chained selectors onto
+   * their own line; a single-line lambda stays joined to its chained call.
+   */
+  fun formatChainedScopingFunction(
+      expression: KtQualifiedExpression,
+      emitLeadingBreak: Boolean,
+  )
 
   /**
    * markForPartialFormat is used to delineate the smallest areas of code that must be formatted
