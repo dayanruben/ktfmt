@@ -4,14 +4,32 @@ import com.google.googlejavaformat.Doc
 import com.google.googlejavaformat.Indent.Const.ZERO
 import org.jetbrains.kotlin.com.intellij.psi.PsiWhiteSpace
 import org.jetbrains.kotlin.lexer.KtModifierKeywordToken
-import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtContextReceiverList
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtModifierList
+import org.jetbrains.kotlin.psi.KtPrimaryConstructor
+import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPropertyAccessor
 import org.jetbrains.kotlin.psi.psiUtil.children
 import org.jetbrains.ktfmt.format.visitor.ListFormatter
 import org.jetbrains.ktfmt.format.visitor.sync
 import org.jetbrains.ktfmt.format.visitor.token
 
+/**
+ * Custom formatter for KotlinLang style. Handles annotation formatting for declarations and types
+ * by overriding [formatModifierList]. For annotations on expressions see
+ * [KotlinLangAnnotationFormatter].
+ *
+ * General rules for annotations in modifier lists:
+ * - One annotation per line (forced breaks) for class-like declarations
+ * - One annotation per line for function-like declarations, including:
+ *     - Top-level functions
+ *     - Class members, including constructors (except primary constructors)
+ *     - Property accessors
+ * - One annotation per line for properties
+ * - No forced breaks for everything else
+ */
 interface KotlinLangListFormatter : ListFormatter {
   override fun formatModifierList(list: KtModifierList) {
     builder.sync(list)
@@ -38,7 +56,12 @@ interface KotlinLangListFormatter : ListFormatter {
         format(psi)
       }
 
-      if (onlyAnnotationsSoFar && psi is KtAnnotationEntry) {
+      val shouldForceBreak =
+          list.parent is KtClassOrObject ||
+              (list.parent is KtFunction && list.parent !is KtPrimaryConstructor) ||
+              (list.parent is KtPropertyAccessor) ||
+              (list.parent is KtProperty)
+      if (onlyAnnotationsSoFar && shouldForceBreak) {
         builder.forcedBreak()
       } else if (onlyAnnotationsSoFar) {
         builder.breakOp(Doc.FillMode.UNIFIED, " ", ZERO)
