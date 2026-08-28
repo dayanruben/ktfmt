@@ -11,6 +11,7 @@ import kotlin.io.path.walk
 import kotlin.io.path.writeText
 import org.jetbrains.ktfmt.format.Formatter
 import org.jetbrains.ktfmt.format.FormattingOptions
+import org.jetbrains.ktfmt.format.KotlinCode
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DynamicContainer
 import org.junit.jupiter.api.DynamicNode
@@ -140,7 +141,11 @@ abstract class FormatterTestFactory(
   }
 
   private fun formatsAsExpected(expectation: TestCase, overwrite: Boolean = false) {
-    val actual = Formatter.format(expectation.config.options, expectation.description.input)
+    val actual =
+        Formatter.format(
+            expectation.config.options,
+            KotlinCode(expectation.description.input, expectation.config.fileType),
+        )
 
     if (actual == expectation.expected) {
       return
@@ -155,7 +160,11 @@ abstract class FormatterTestFactory(
   }
 
   private fun outputIsIdempotent(expectation: TestCase) {
-    val reformatted = Formatter.format(expectation.config.options, expectation.expected)
+    val reformatted =
+        Formatter.format(
+            expectation.config.options,
+            KotlinCode(expectation.expected, expectation.config.fileType),
+        )
     assertEquals(
         expectation.expected,
         reformatted,

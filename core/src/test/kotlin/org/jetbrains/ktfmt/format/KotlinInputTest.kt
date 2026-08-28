@@ -16,9 +16,11 @@
 
 package org.jetbrains.ktfmt.format
 
+import org.jetbrains.ktfmt.annotations.InternalKtfmtTestApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
+@OptIn(InternalKtfmtTestApi::class)
 class KotlinInputTest {
   @Test
   fun `Comments are toks not tokens`() {
@@ -26,5 +28,13 @@ class KotlinInputTest {
     val input = KotlinInput(code, Parser.parse(code))
     assertEquals(listOf("class", "F", "{", "}", ""), input.getTokens().map { it.tok.text })
     assertEquals(listOf("/** foo */", " "), input.getTokens()[0].toksBefore.map { it.text })
+  }
+
+  @Test
+  fun `Shebang is a tok`() {
+    val code = "#!/bin/kotlinc\nclass F {}"
+    val input = KotlinInput(code, Parser.parse(KotlinCode(code, FileType.SCRIPT)))
+    assertEquals(listOf("class", "F", "{", "}", ""), input.getTokens().map { it.tok.text })
+    assertEquals(listOf("#!/bin/kotlinc", "\n"), input.getTokens()[0].toksBefore.map { it.text })
   }
 }

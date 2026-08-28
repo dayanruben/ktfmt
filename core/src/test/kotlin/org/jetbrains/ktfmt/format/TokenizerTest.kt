@@ -16,10 +16,12 @@
 
 package org.jetbrains.ktfmt.format
 
+import org.jetbrains.ktfmt.annotations.InternalKtfmtTestApi
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
+@OptIn(InternalKtfmtTestApi::class)
 class TokenizerTest {
   @Test
   fun `PsiWhiteSpace are split to newlines and maximal-length whitespaces`() {
@@ -742,7 +744,7 @@ class TokenizerTest {
   }
 
   private fun assertParseError(code: String, message: String?) {
-    val file = Parser.parse(code)
+    val file = Parser.parse(KotlinCode(code, FileType.SCRIPT))
     val tokenizer = Tokenizer(code, file)
     if (message == null) {
       file.accept(tokenizer)

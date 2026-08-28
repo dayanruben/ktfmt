@@ -16,8 +16,10 @@
 
 package org.jetbrains.ktfmt.format
 
+import org.jetbrains.kotlin.K1Deprecation
 import org.jetbrains.kotlin.cli.common.messages.MessageRenderer.PLAIN_RELATIVE_PATHS
 import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
+import org.jetbrains.kotlin.cli.create
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.com.intellij.openapi.util.Disposer
@@ -31,6 +33,7 @@ import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.startOffset
+import org.jetbrains.ktfmt.annotations.InternalKtfmtTestApi
 
 /** Parser parses a Kotlin file given as a string and returns its parse tree. */
 object Parser {
@@ -42,17 +45,22 @@ object Parser {
    * causing a worse memory leak before when we created new ones and disposed them. This leak comes
    * from [KotlinCoreEnvironment.createForProduction]:
    * https://github.com/JetBrains/kotlin/blob/master/compiler/cli/src/org/jetbrains/kotlin/cli/jvm/compiler/KotlinCoreEnvironment.kt#L544
+   *
+   * In the future release the [K1Deprecation] annotation is replaced by a new
+   * `CoreEnvironmentDeprecation` annotation that is not part of the K1 deprecation process.
+   * Therefore, we can rely on it until we migrate to the KMP parser or come up with a better
+   * solution. https://github.com/JetBrains/kotlin/commit/3d92fa98294055ba43e294d6e320630e18697c6e
    */
   val env: KotlinCoreEnvironment by lazy {
     // To hide annoying warning on Windows
     System.setProperty("idea.use.native.fs.for.win", "false")
     val disposable = Disposer.newDisposable()
-    val configuration = CompilerConfiguration()
+    val configuration = CompilerConfiguration.create()
     configuration.put(
         CommonConfigurationKeys.MESSAGE_COLLECTOR_KEY,
         PrintingMessageCollector(System.err, PLAIN_RELATIVE_PATHS, false),
     )
-    @Suppress("OPT_IN_USAGE_ERROR") // KotlinCoreEnvironment.createForProduction
+    @OptIn(K1Deprecation::class)
     KotlinCoreEnvironment.createForProduction(
         disposable,
         configuration,
@@ -60,13 +68,17 @@ object Parser {
     )
   }
 
-  fun parse(code: String): KtFile {
-    val virtualFile = LightVirtualFile("temp.kts", KotlinFileType.INSTANCE, code)
+  fun parse(code: KotlinCode): KtFile {
+    val virtualFile =
+        LightVirtualFile("temp.${code.fileType.extension}", KotlinFileType.INSTANCE, code.code)
     val ktFile = PsiManager.getInstance(env.project).findFile(virtualFile) as KtFile
     val descendants = ktFile.collectDescendantsOfType<PsiErrorElement>()
-    if (descendants.isNotEmpty()) throwParseError(code, descendants[0])
+    if (descendants.isNotEmpty()) throwParseError(code.code, descendants[0])
     return ktFile
   }
+
+  @InternalKtfmtTestApi
+  internal fun parse(code: String): KtFile = parse(KotlinCode(code, FileType.REGULAR))
 
   private fun throwParseError(fileContents: String, error: PsiErrorElement): Nothing {
     throw ParseError(
