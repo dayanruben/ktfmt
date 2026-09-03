@@ -1,5 +1,8 @@
 package org.jetbrains.ktfmt.format.visitor
 
+import com.google.common.base.Throwables
+import com.google.googlejavaformat.FormattingError
+import com.google.googlejavaformat.OpsBuilder
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.KtAnnotatedExpression
 import org.jetbrains.kotlin.psi.KtAnnotation
@@ -81,10 +84,24 @@ import org.jetbrains.kotlin.psi.KtWhenConditionIsPattern
 import org.jetbrains.kotlin.psi.KtWhenConditionWithExpression
 import org.jetbrains.kotlin.psi.KtWhenExpression
 import org.jetbrains.kotlin.psi.KtWhileExpression
+import org.jetbrains.ktfmt.format.FormattingOptions
 
-abstract class AbstractFormatterVisitor : KtTreeVisitorVoid(), KotlinAstFormatter {
+abstract class AbstractKotlinFormatter(
+    val options: FormattingOptions,
+    val builder: OpsBuilder,
+    val annotationFormatter: AnnotationFormatter = AnnotationFormatterImpl(),
+    val callFormatter: CallFormatter = CallFormatterImpl(),
+    val controlFlowExpressionFormatter: ControlFlowExpressionFormatter =
+        ControlFlowExpressionFormatterImpl(),
+    val declarationFormatter: DeclarationFormatter = DeclarationFormatterImpl(),
+    val expressionFormatter: ExpressionFormatter = ExpressionFormatterImpl(),
+    val fileFormatter: FileFormatter = FileFormatterImpl(),
+    val listFormatter: ListFormatter = ListFormatterImpl(),
+    val typeFormatter: TypeFormatter = TypeFormatterImpl(),
+) : KtTreeVisitorVoid(), FormatterStateHolder {
+  override val state = FormatterState(options, builder, this)
 
-  override fun format(element: PsiElement?) {
+  fun format(element: PsiElement?) {
     element?.accept(this)
   }
 
@@ -173,7 +190,7 @@ abstract class AbstractFormatterVisitor : KtTreeVisitorVoid(), KotlinAstFormatte
   }
 
   override fun visitArgument(argument: KtValueArgument) {
-    formatArgument(argument)
+    formatArgument(argument, wrapInBlock = true, brokeBeforeBrace = null)
   }
 
   override fun visitSuperTypeList(list: KtSuperTypeList) {
@@ -221,7 +238,7 @@ abstract class AbstractFormatterVisitor : KtTreeVisitorVoid(), KotlinAstFormatte
   }
 
   override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
-    formatLambdaExpression(lambdaExpression)
+    formatLambdaExpression(lambdaExpression, brokeBeforeBrace = null)
   }
 
   override fun visitThisExpression(expression: KtThisExpression) {
@@ -383,7 +400,11 @@ abstract class AbstractFormatterVisitor : KtTreeVisitorVoid(), KotlinAstFormatte
   }
 
   override fun visitImportDirective(directive: KtImportDirective) {
-    formatImportDirective(directive)
+    state.inImport {
+      context(state) {
+        formatImportDirective(directive)
+      }
+    }
   }
 
   override fun visitAnnotatedExpression(expression: KtAnnotatedExpression) {
@@ -412,5 +433,25 @@ abstract class AbstractFormatterVisitor : KtTreeVisitorVoid(), KotlinAstFormatte
   ): Void? {
     formatFileAnnotationList(fileAnnotationList)
     return null
+  }
+
+  /**
+   * visitElement is called for almost all types of AST nodes. We use it to keep track of whether
+   * we're currently inside an expression or not.
+   *
+   * @throws FormattingError
+   */
+  override fun visitElement(element: PsiElement) {
+    state.inElement(element) {
+      val previous = builder.depth()
+      try {
+        super.visitElement(element)
+      } catch (e: FormattingError) {
+        throw e
+      } catch (t: Throwable) {
+        throw FormattingError(builder.diagnostic(Throwables.getStackTraceAsString(t)))
+      }
+      builder.checkClosed(previous)
+    }
   }
 }

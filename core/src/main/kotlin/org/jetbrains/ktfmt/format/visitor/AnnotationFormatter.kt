@@ -1,7 +1,6 @@
 package org.jetbrains.ktfmt.format.visitor
 
 import com.google.googlejavaformat.Doc
-import com.google.googlejavaformat.Indent.Const.ZERO
 import org.jetbrains.kotlin.psi.KtAnnotatedExpression
 import org.jetbrains.kotlin.psi.KtAnnotation
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
@@ -9,14 +8,30 @@ import org.jetbrains.kotlin.psi.KtAnnotationUseSiteTarget
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtReturnExpression
+import org.jetbrains.ktfmt.format.visitor.Indentation.Companion.ZERO
 
-interface AnnotationFormatter : KotlinAstFormatter {
+interface AnnotationFormatter {
+  context(_: FormatterStateHolder)
+  fun formatAnnotatedExpression(expression: KtAnnotatedExpression)
+
+  context(_: FormatterStateHolder)
+  fun formatAnnotation(annotation: KtAnnotation)
+
+  context(_: FormatterStateHolder)
+  fun formatAnnotationUseSiteTarget(annotationTarget: KtAnnotationUseSiteTarget)
+
+  context(_: FormatterStateHolder)
+  fun formatAnnotationEntry(annotationEntry: KtAnnotationEntry)
+}
+
+internal open class AnnotationFormatterImpl : AnnotationFormatter {
+  context(_: FormatterStateHolder)
   override fun formatAnnotatedExpression(expression: KtAnnotatedExpression) {
     builder.sync(expression)
-    builder.block(ZERO) {
+    builder.block {
       val baseExpression = expression.baseExpression
 
-      builder.block(ZERO) {
+      builder.block {
         val annotationEntries = expression.annotationEntries
         for (annotationEntry in annotationEntries) {
           if (annotationEntry !== annotationEntries.first()) {
@@ -46,9 +61,10 @@ interface AnnotationFormatter : KotlinAstFormatter {
    * A KtAnnotation is used only to group multiple annotations with the same use-site-target. It
    * only appears in a modifier list since annotated expressions do not have use-site-targets.
    */
+  context(_: FormatterStateHolder)
   override fun formatAnnotation(annotation: KtAnnotation) {
     builder.sync(annotation)
-    builder.block(ZERO) {
+    builder.block {
       builder.token("@")
       val useSiteTarget = annotation.useSiteTarget
       if (useSiteTarget != null) {
@@ -58,7 +74,7 @@ interface AnnotationFormatter : KotlinAstFormatter {
       builder.block(expressionBreakIndent) {
         builder.token("[")
 
-        builder.block(ZERO) {
+        builder.block {
           var first = true
           builder.breakOp(Doc.FillMode.UNIFIED, "", ZERO)
           for (value in annotation.entries) {
@@ -76,10 +92,12 @@ interface AnnotationFormatter : KotlinAstFormatter {
     builder.forcedBreak()
   }
 
+  context(_: FormatterStateHolder)
   override fun formatAnnotationUseSiteTarget(annotationTarget: KtAnnotationUseSiteTarget) {
     builder.token(annotationTarget.getAnnotationUseSiteTarget().renderName)
   }
 
+  context(_: FormatterStateHolder)
   override fun formatAnnotationEntry(annotationEntry: KtAnnotationEntry) {
     builder.sync(annotationEntry)
     if (annotationEntry.atSymbol != null) {
@@ -90,11 +108,11 @@ interface AnnotationFormatter : KotlinAstFormatter {
       format(useSiteTarget)
       builder.token(":")
     }
-    formatCallElement(
+    formatFunctionCall(
         annotationEntry.calleeExpression,
         null, // Type-arguments are included in the annotation's callee expression.
         annotationEntry.valueArgumentList,
-        listOf(),
+        null,
     )
   }
 }
