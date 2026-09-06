@@ -1,0 +1,5 @@
+class FooTest {
+    @get:Rule val benchmarkRule = BenchmarkRule()
+
+    @set:Magic(name = "Jane") var field: String
+}
