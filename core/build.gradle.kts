@@ -14,101 +14,85 @@
  * limitations under the License.
  */
 
-import kotlin.io.path.writeText
-import org.jetbrains.intellij.platform.gradle.utils.asPath
+import org.jetbrains.dokka.gradle.tasks.DokkaGeneratePublicationTask
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
+import org.jetbrains.ktfmt.GenerateKtfmtFileTask
 
 plugins {
   kotlin("jvm")
-  id("com.gradleup.shadow")
-  id("com.ncorti.ktfmt.gradle")
+  alias(libs.plugins.dependencyAnalysis)
+  alias(libs.plugins.dokka)
+  alias(libs.plugins.dokka.javadoc)
+  alias(libs.plugins.shadowJar)
   id("maven-publish")
-  id("org.jetbrains.dokka")
   id("signing")
-}
-
-repositories {
-  mavenLocal()
-  mavenCentral()
+  id("ktfmt.ktfmt-file-generator")
+  id("ktfmt.native-image")
 }
 
 dependencies {
   api(libs.googleJavaformat)
   api(libs.guava)
-  api(libs.jna)
   api(libs.kotlin.stdlib)
   api(libs.kotlin.compilerEmbeddable)
   implementation(libs.ec4j)
-  testImplementation(libs.kotlin.test.junit4)
-  testImplementation(libs.googleTruth)
-  testImplementation(libs.junit)
+  testImplementation(platform(libs.junit.bom))
+  testImplementation(libs.junit.jupiter.api)
+  testRuntimeOnly(libs.junit.jupiter.engine)
+  testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-val generateSources by tasks.registering {
-  outputs.dir(layout.buildDirectory.dir("generated/main/java"))
-  dependsOn(tasks.named("generateKtfmtFile"))
+val generateSources =
+    tasks.register("generateSources") {
+      description = "Generate sources"
+      outputs.dir(layout.buildDirectory.dir("generated/main/kotlin"))
+      dependsOn(tasks.withType<GenerateKtfmtFileTask>())
+    }
+
+// Match a correct source set by the current Kotlin version (e.g., 2.3.0-beta1 -> 2.3)
+val compatibilitySources = run {
+  val kotlinVersion = rootProject.libs.versions.kotlin.get().substringBeforeLast(".")
+  val sourceRoot = layout.projectDirectory.dir("src/main/kotlin-$kotlinVersion")
+  require(sourceRoot.asFile.isDirectory) {
+    "No compatibility sources for Kotlin $kotlinVersion: expected $sourceRoot."
+  }
+  sourceRoot
 }
 
 tasks {
-  // Create Ktfmt.kt file with version information
-  register("generateKtfmtFile") {
-    val genVersionFileScript = rootProject.rootDir.resolve("gen_version_file.sh")
-    val versionPropertiesFile = rootProject.rootDir.resolve("gradle.properties")
-    val versionFile =
-        layout.buildDirectory.file("generated/main/java/com/facebook/ktfmt/util/Ktfmt.kt")
+  register<Test>("updateTestData") {
+    group = "verification"
+    description = "Rewrites test data '.output' files with the actual formatter output"
 
-    inputs.files(genVersionFileScript, versionPropertiesFile)
-    outputs.file(versionFile)
-    outputs.cacheIf { true }
+    val testSourceSet = sourceSets.test
+    testClassesDirs = testSourceSet.get().output.classesDirs
+    classpath = testSourceSet.get().runtimeClasspath
 
-    // provider to run the shell script genVersionFileScript with versionPropertiesFile as argument
-    val scriptProcess = providers.exec {
-      workingDir = rootProject.rootDir
-      commandLine = listOf(genVersionFileScript.toString(), versionPropertiesFile.toString())
-    }
-
-    doLast {
-      val scriptOutput = scriptProcess.standardOutput.asText.get()
-      if (scriptProcess.result.get().exitValue != 0) {
-        val scriptError = scriptProcess.standardError.asText.get()
-        error("Failed to generate version file!\nstdout:\n$scriptOutput\n\nstderr:\n$scriptError")
-      }
-      versionFile.get().asPath.writeText(scriptOutput)
-      logger.info("Generated version file at ${versionFile.get()}")
-    }
+    systemProperty("ktfmt.test.updateTestData", "true")
   }
 
-  // Run tests with UTF-16 encoding
-  test { jvmArgs("-Dfile.encoding=UTF-16") }
-
-  // Handle multiple versions of Kotlin here
-  withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    // Only get major and minor version, e.g. 1.8.0-beta1 -> 1.8
-    val kotlinVersion = rootProject.libs.versions.kotlin.get().substringBeforeLast(".")
-    exclude {
-      val path = it.file.path
-      "com/facebook/ktfmt/util/kotlin-" in path && "kotlin-$kotlinVersion" !in path
-    }
+  withType<Test>().configureEach {
+    useJUnitPlatform()
+    jvmArgs("-Dfile.encoding=UTF-16")
   }
 
-  // Add main class to jar manifest
-  withType(Jar::class) { manifest { attributes["Main-Class"] = "com.facebook.ktfmt.cli.Main" } }
+  withType(Jar::class) { manifest { attributes["Main-Class"] = "org.jetbrains.ktfmt.cli.Main" } }
 
-  // Sources
-  register("sourcesJar", Jar::class) {
-    archiveClassifier.set("sources")
+  register<Jar>("sourcesJar") {
+    description = "Sources jar including generated sources and compatibility utils"
+    archiveClassifier = "sources"
     from(sourceSets["main"].allSource)
   }
 
-  // Javadoc
-  register("javadocJar", Jar::class) {
-    val dokkaJavadocTask = named("dokkaJavadoc", org.jetbrains.dokka.gradle.DokkaTask::class)
+  register<Jar>("javadocJar") {
+    description = "Dokka-generated Javadoc jar"
+    val dokkaJavadocTask = named<DokkaGeneratePublicationTask>("dokkaGeneratePublicationJavadoc")
     dependsOn(dokkaJavadocTask)
     from(dokkaJavadocTask.flatMap { it.outputDirectory })
-    archiveClassifier.set("javadoc")
+    archiveClassifier = "javadoc"
   }
 
-  // Fat jar
   shadowJar {
     archiveClassifier = "with-dependencies"
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
@@ -117,7 +101,9 @@ tasks {
 }
 
 kotlin {
-  @OptIn(ExperimentalAbiValidation::class) abiValidation { enabled = true }
+  @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class) abiValidation()
+
+  compilerOptions { jvmDefault = JvmDefaultMode.NO_COMPATIBILITY }
 
   val javaVersion: String = rootProject.libs.versions.java.get()
   jvmToolchain(javaVersion.toInt())
@@ -125,27 +111,21 @@ kotlin {
   sourceSets {
     main {
       kotlin {
-        // Include generated code
         srcDir(generateSources)
+        srcDir(compatibilitySources)
       }
     }
   }
 }
 
-ktfmt {
-  trailingCommaManagementStrategy.set(
-      com.ncorti.ktfmt.gradle.TrailingCommaManagementStrategy.ONLY_ADD
-  )
-}
-
-group = "com.facebook"
+group = "org.jetbrains"
 
 version = rootProject.version
 
 publishing {
   publications {
     create<MavenPublication>("maven") {
-      groupId = "com.facebook"
+      groupId = "org.jetbrains"
       artifactId = "ktfmt"
       version = rootProject.version.toString()
 
@@ -157,9 +137,9 @@ publishing {
         name = "Ktfmt"
         description =
             "A program that reformats Kotlin source code to comply with the common community standard for Kotlin code conventions."
-        url = "https://github.com/facebook/ktfmt"
+        url = "https://github.com/Kotlin/ktfmt"
         inceptionYear = "2019"
-        developers { developer { name = "Facebook" } }
+        developers { developer { name = "Kotlin" } }
         licenses {
           license {
             name = "The Apache License, Version 2.0"
@@ -167,9 +147,9 @@ publishing {
           }
         }
         scm {
-          connection = "scm:git:https://github.com/facebook/ktfmt.git"
-          developerConnection = "scm:git:git@github.com:facebook/ktfmt.git"
-          url = "https://github.com/facebook/ktfmt.git"
+          connection = "scm:git:https://github.com/Kotlin/ktfmt.git"
+          developerConnection = "scm:git:git@github.com:Kotlin/ktfmt.git"
+          url = "https://github.com/Kotlin/ktfmt.git"
         }
       }
     }

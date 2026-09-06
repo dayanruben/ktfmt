@@ -1,0 +1,12 @@
+// MAX_WIDTH 100
+// BLOCK_INDENT 4
+// CONTINUATION_INDENT 4
+// TRAILING_COMMA_STRATEGY ONLY_ADD
+fun testShowBillingErrorPaymentButton() = composeExtension.use {
+    setContentWithTheme {
+        AccountScreen(
+            state = AccountUiState.default().copy(billingPaymentState = PaymentState.Error.Billing),
+            uiSideEffect = MutableSharedFlow<AccountViewModel.UiSideEffect>().asSharedFlow(),
+        )
+    }
+}
