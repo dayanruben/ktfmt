@@ -183,6 +183,22 @@ However, we do offer an alternative style for projects that absolutely cannot ma
 
 Alternatively, the `ktfmt` command-line supports a limited subset of `.editorconfig` properties; see above.
 
+### How do I adopt `ktfmt` without polluting `git blame`?
+
+Running `ktfmt` over a whole repository creates a large reformatting commit that then shows up in
+`git blame`. To keep history readable, record the reformatting commit hash(es) in a root
+`.git-blame-ignore-revs` file and point git at it:
+
+```
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
+GitHub and GitLab honor this file automatically in their blame views, and
+`git blame --ignore-revs-file=.git-blame-ignore-revs` works without any extra configuration.
+This convention, supported via git's
+[`blame.ignoreRevsFile`](https://git-scm.com/docs/git-blame) option, is useful both when first
+adopting `ktfmt` and for any later backwards-incompatible formatting changes.
+
 ## Developer's Guide
 
 ### Setup
