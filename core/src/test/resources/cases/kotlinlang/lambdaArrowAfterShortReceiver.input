@@ -1,0 +1,8 @@
+// MAX_WIDTH 100
+val input = "abc"
+val example =
+    try {
+        input.fakeFunction(short).map { strng -> strng.replace("a", "b") }
+    } catch (error: Exception) {
+        println()
+    }
