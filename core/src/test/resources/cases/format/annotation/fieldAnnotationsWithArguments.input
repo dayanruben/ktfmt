@@ -1,0 +1,5 @@
+class Test {
+  @Autowired(required = false) @Nullable private lateinit var bar: Bar
+
+  @Autowired @Nullable private lateinit var foo: Foo
+}
