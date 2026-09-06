@@ -1,0 +1,28 @@
+@Simple fun simpleFunction(): Int = 1
+
+@Simple val simpleProperty: Int = 1
+
+@Simple class SimpleClass
+
+@First
+@Second
+fun annotatedFunction(): Int = 1
+
+@First("value")
+fun annotatedFunctionWithArgument(): Int = 1
+
+@First
+@Second
+val annotatedProperty: Int = 1
+
+@First("value")
+val annotatedPropertyWithArgument: Int = 1
+
+@First
+@Second
+class AnnotatedClass
+
+@First("value")
+class AnnotatedClassWithArgument
+
+fun parametersStayCompact(@First @Second value: Int, @First("value") other: Int) = value + other
