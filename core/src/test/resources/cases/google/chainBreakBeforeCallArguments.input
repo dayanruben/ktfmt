@@ -1,0 +1,6 @@
+// MAX_WIDTH 75
+fun f() {
+  val result =
+    sequence(Person("alice", 25), Person("bob", 20), Person("charlie", 30))
+      .ktMap("MapExtractName") { it.name }
+}
