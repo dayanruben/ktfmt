@@ -1,0 +1,14 @@
+fun quux() {
+    runnnnn {
+            foo()
+            bar()
+        }
+        .baz()
+}
+
+fun quux() =
+    runnnnn {
+            foo()
+            bar()
+        }
+        .baz()
