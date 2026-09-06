@@ -4,17 +4,43 @@ All notable changes to the ktfmt project (starting on v0.51) should be documente
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
-## [1.0.0 Unreleased]
-
-### Changed
-- All styles managing trailing commas now (https://github.com/facebook/ktfmt/issues/216, https://github.com/facebook/ktfmt/issues/442)
-
 
 ## [Unreleased]
+
+### Added
+
+- Support partial formatting with `--lines`/`--line` and matching
+  `--offset`/`--length` pairs, mirroring
+  [google-java-format's](https://github.com/google/google-java-format#from-the-command-line)
+  selected-range formatting flags.
+- Support selected-range formatting in the IntelliJ plugin.
+- GraalVM native image support
+- Support val/var keywords in destructuring entries (https://github.com/facebook/ktfmt/pull/637)
+- Use `--stdin-name` as the EditorConfig lookup path when formatting source from stdin.
+
+### Changed
+
+- Trailing comma is now added when a single parameter is formatted onto its own line (https://github.com/facebook/ktfmt/issues/461) 
+- Migrated from `com.facebook.ktfmt` package to `org.jetbrains.ktfmt`
+- Use the file's extension to differentiate between scripts and regular files in the parser
+
+### Fixed
+
+* Fix non-idempotent formatting when a managed trailing comma pushes a line over MAX_WIDTH (e.g. a long qualified expression as the last argument of a call). The comma is now accounted for by re-running the layout, so the line is broken correctly on the first pass. (https://github.com/facebook/ktfmt/pull/636)
+* Fix non-idempotent formatting when max width breaks a scoping-function lambda with a chained call (e.g. `runCatching { ... }.getOrNull()`): the chained call now breaks onto its own line together with the lambda on the first pass. (https://github.com/Kotlin/ktfmt/issues/640)
+
+
+## [0.64]
 
 ### Changed
 
 * Reduced overall number of allocations to improve formatting performance (~6-7%) (https://github.com/facebook/ktfmt/pull/620)
+* Reuse results of `Parser.parse` (https://github.com/facebook/ktfmt/pull/622)
+* Fix trailing lambda with chained call indentation (https://github.com/facebook/ktfmt/pull/626)
+
+### Fixed
+
+* Support name-based destructuring declarations. (https://github.com/facebook/ktfmt/issues/629)
 
 ## [0.63]
 

@@ -1,4 +1,4 @@
-# ktfmt [![GitHub release](https://img.shields.io/github/release/facebook/ktfmt?sort=semver)](https://github.com/facebook/ktfmt/releases/)   [![Maven Central Version](https://img.shields.io/maven-central/v/com.facebook/ktfmt)](https://central.sonatype.com/artifact/com.facebook/ktfmt)   [![](https://github.com/facebook/ktfmt/workflows/Build%20and%20Test/badge.svg)](https://github.com/facebook/ktfmt/actions/workflows/build_and_test.yml "GitHub Actions workflow status")   [![slack](https://img.shields.io/badge/Slack-ktfmt-purple.svg?logo=slack)](https://slack-chats.kotlinlang.org/c/ktfmt)   [![invite](https://img.shields.io/badge/Request%20a%20Slack%20invite-8A2BE2)](https://surveys.jetbrains.com/s3/kotlin-slack-sign-up)   [![issues - ktfmt](https://img.shields.io/github/issues/facebook/ktfmt)](https://github.com/facebook/ktfmt/issues)
+# ktfmt [![GitHub release](https://img.shields.io/github/release/kotlin/ktfmt?sort=semver)](https://github.com/Kotlin/ktfmt/releases/)   [![Maven Central Version](https://img.shields.io/maven-central/v/com.facebook/ktfmt)](https://central.sonatype.com/artifact/com.facebook/ktfmt) [![slack](https://img.shields.io/badge/Slack-ktfmt-purple.svg?logo=slack)](https://slack-chats.kotlinlang.org/c/ktfmt)   [![invite](https://img.shields.io/badge/Request%20a%20Slack%20invite-8A2BE2)](https://surveys.jetbrains.com/s3/kotlin-slack-sign-up)   [![issues - ktfmt](https://img.shields.io/github/issues/facebook/ktfmt)](https://github.com/Kotlin/ktfmt/issues)
 
 `ktfmt` is a program that pretty-prints (formats) Kotlin code, based on
 [google-java-format](https://github.com/google/google-java-format).
@@ -18,11 +18,6 @@ IntelliJ:
 | ------ | --------|
 | ![ktlint](docs/images/ktlint.png) | ![IntelliJ](docs/images/intellij.png) |
 
-## Playground
-
-We have a [live playground](https://facebook.github.io/ktfmt/) where you can easily see how ktfmt
-would format your code.
-Give it a try! https://facebook.github.io/ktfmt/
 
 ## Using the formatter
 
@@ -69,11 +64,21 @@ $ brew install ktfmt
 
 ### from the command-line
 
-[Download the formatter](https://github.com/facebook/ktfmt/releases) and run it with:
+[Download the formatter](https://github.com/Kotlin/ktfmt/releases) and run it with:
 
 ```
 $ java -jar /path/to/ktfmt-<VERSION>-with-dependencies.jar [--kotlinlang-style | --google-style] [files...]
 ```
+
+The formatter can act on whole files, on limited lines (`--lines` or `--line`), or on specific
+offsets (`--offset` and `--length`). Line ranges look like `5` or `1:12,14`, may be used multiple
+times, and are 1-based. Offset ranges must provide matching `--offset` and `--length` pairs;
+`--length=0` formats the whole line containing the given `--offset`.
+
+Partial formatting limits the core pretty-print replacements to the selected ranges. Whole-file
+cleanup passes, such as import cleanup and multiline string formatting, still run afterward to match
+[google-java-format's](https://github.com/google/google-java-format#from-the-command-line)
+cleanup-after-selection behavior.
 
 `--kotlinlang-style` makes `ktfmt` use a block indent of 4 spaces instead of 2.
 See below for details.
@@ -87,6 +92,12 @@ following subset of editorconfig properties:
 | `indent_size`<br/>*or `tab_width` if `indent_size = tab`* | will override the block indent                                                                   |
 | `ij_continuation_indent_size`                             | will override the continuation indent                                                            |
 | `ktfmt_trailing_comma_management_strategy`                | one of `none`, `only_add` or `complete`<br/>will override the trailing comma management strategy |
+
+When formatting source from stdin, pass `--stdin-name=<path>` to resolve EditorConfig settings as if the input were located at that path. The named file does not need to exist and is not read or modified.
+
+```shell
+ktfmt --enable-editorconfig --stdin-name="$PWD/src/Foo.kt" -
+```
 
 #### Preserving Lambda Line Breaks
 
