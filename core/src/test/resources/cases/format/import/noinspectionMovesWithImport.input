@@ -1,0 +1,8 @@
+package com.facebook.ktfmt
+
+//noinspection BannedImport
+import com.example.z
+import com.example.x
+import com.example.y
+
+val value = x + y + z

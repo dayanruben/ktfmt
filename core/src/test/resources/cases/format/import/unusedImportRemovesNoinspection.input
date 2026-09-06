@@ -1,0 +1,7 @@
+package com.facebook.ktfmt
+
+import com.example.used
+//noinspection BannedImport
+import com.example.unused
+
+val value = used

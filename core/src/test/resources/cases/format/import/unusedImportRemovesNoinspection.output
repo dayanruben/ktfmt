@@ -1,0 +1,5 @@
+package com.facebook.ktfmt
+
+import com.example.used
+
+val value = used
