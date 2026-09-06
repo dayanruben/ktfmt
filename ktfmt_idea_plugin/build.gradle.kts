@@ -18,15 +18,15 @@ import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdeaC
 
 plugins {
   java
+  alias(libs.plugins.dependencyAnalysis)
   alias(libs.plugins.kotlin)
-  alias(libs.plugins.ktfmt)
   alias(libs.plugins.intelliJPlatform)
 }
 
 val ktfmtVersion = rootProject.version
 val pluginVersion = "1.3"
 
-group = "com.facebook"
+group = "org.jetbrains"
 
 version = "$pluginVersion.$ktfmtVersion"
 
@@ -49,16 +49,13 @@ dependencies {
   }
 
   implementation(project(":ktfmt"))
-}
-
-ktfmt {
-  trailingCommaManagementStrategy.set(
-      com.ncorti.ktfmt.gradle.TrailingCommaManagementStrategy.ONLY_ADD
-  )
+  implementation(libs.googleJavaformat)
+  implementation(libs.guava)
+  implementation(libs.kotlin.compilerEmbeddable)
 }
 
 intellijPlatform {
-  projectName.set("ktfmt_idea_plugin")
+  projectName = "ktfmt_idea_plugin"
 
   pluginConfiguration.ideaVersion {
     sinceBuild = "223.7571.182" // 2022.3
