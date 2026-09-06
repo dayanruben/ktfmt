@@ -1,0 +1,7 @@
+// MAX_WIDTH 70
+fun f() {
+  val adapter =
+      screenRobot.theRecyclerViewForTheVeryLongListWithExtraQualifier
+          .adapter
+          .shouldBeTypeOf<ListAdapter<GroupieViewHolder>>(subject)
+}
