@@ -1,0 +1,6 @@
+fun f(name: String): List<String> =
+    listOf(
+        "The quick brown fox jumps over $name while carrying a very long string literal",
+        "The quick brown fox jumps over \"the lazy dog\" while carrying a very long string literal",
+        """The quick brown fox jumps over the lazy dog while carrying a very long string literal""",
+    )

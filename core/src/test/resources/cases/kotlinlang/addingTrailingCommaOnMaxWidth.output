@@ -1,0 +1,7 @@
+// FILE_TYPE SCRIPT
+
+functionCall(
+    shortArg,
+    namedArgument =
+        "string sized so the trailing comma ktfmt adds tips it one char over the limit.",
+)
