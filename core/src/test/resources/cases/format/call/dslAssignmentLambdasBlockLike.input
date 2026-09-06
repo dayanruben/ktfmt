@@ -1,0 +1,9 @@
+fun f() {
+  foo = fooDsl {
+    bar += barDsl {
+      baz = bazDsl {
+        bal = 1
+      }
+    }
+  }
+}
