@@ -1,0 +1,8 @@
+enum class Values {
+  ONE,
+  TWO {
+    override fun run() {}
+  };
+
+  abstract fun run()
+}
