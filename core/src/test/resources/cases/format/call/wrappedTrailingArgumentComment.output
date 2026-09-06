@@ -1,0 +1,11 @@
+class SomeClass {
+  private fun someFunction() {
+    ListAssert(blah)
+        .blahBlahBlah(
+            "abcdefghijklmnopqurstuvw",
+            "alsdkf jlasjf lkasjdlsadfjl", // A long comment that gets wrapped and then reformatted
+            // again after running ktfmt twice, what!!!!
+        )
+        .isEqualTo(someOtherThing)
+  }
+}
