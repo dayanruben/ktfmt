@@ -1,0 +1,4 @@
+// MAX_WIDTH 48
+fun f() {
+  val response = testClient.given().request().thenRespond<LongTypeNameThatIsQuiteLongIndeed> { body() }
+}
