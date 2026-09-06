@@ -1,0 +1,4 @@
+// FILE_TYPE SCRIPT
+tasks.named("preBuild").dependsOn("test")
+
+//
