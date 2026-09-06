@@ -1,0 +1,7 @@
+// MAX_WIDTH 72
+fun f() {
+  val result: VeryVeryLongCustomInterface =
+      VeryVeryLongCustomInterface {
+        makeEndResultWithEnoughArguments(alpha, beta, gamma)
+      }
+}
