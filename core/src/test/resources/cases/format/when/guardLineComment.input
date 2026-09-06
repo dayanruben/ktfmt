@@ -1,0 +1,7 @@
+fun feedAnimal(x: Boolean) {
+  when (x) {
+    true if // foo
+        x -> bar()
+    else -> baz()
+  }
+}

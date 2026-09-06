@@ -1,0 +1,6 @@
+fun f() {
+  for (i in // foo
+      1..10) {
+    bar()
+  }
+}

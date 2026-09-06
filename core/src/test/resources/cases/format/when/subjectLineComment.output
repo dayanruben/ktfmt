@@ -1,0 +1,8 @@
+fun f(x: Boolean) {
+  when ( // foo
+      x
+  ) {
+    true -> bar()
+    else -> baz()
+  }
+}

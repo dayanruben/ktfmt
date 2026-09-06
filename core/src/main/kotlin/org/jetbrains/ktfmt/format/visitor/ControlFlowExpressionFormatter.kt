@@ -3,7 +3,11 @@ package org.jetbrains.ktfmt.format.visitor
 import com.google.googlejavaformat.Doc
 import com.google.googlejavaformat.OpsBuilder
 import java.util.Optional
+import org.jetbrains.kotlin.com.intellij.psi.PsiComment
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.com.intellij.psi.PsiWhiteSpace
 import org.jetbrains.kotlin.psi.KtBlockExpression
+import org.jetbrains.kotlin.psi.KtContainerNode
 import org.jetbrains.kotlin.psi.KtBreakExpression
 import org.jetbrains.kotlin.psi.KtCatchClause
 import org.jetbrains.kotlin.psi.KtContinueExpression
@@ -225,10 +229,22 @@ internal class ControlFlowExpressionFormatterImpl : ControlFlowExpressionFormatt
       builder.token("(")
       format(expression.loopParameter)
       builder.space()
-      builder.token("in")
-      builder.block {
-        builder.breakOp(Doc.FillMode.UNIFIED, " ", expressionBreakIndent)
-        builder.block(expressionBreakIndent) { format(expression.loopRange) }
+      // Like conditions above, open the indented block before `in` when a line comment trails
+      // it, so the range keeps the continuation indent (#692). The inner shape is unchanged, so
+      // code without such a comment formats exactly as before. With the wrapper contributing the
+      // +4, the break uses ZERO: the taken indent is unchanged, but a comment-forced break
+      // suppresses the flat space that would otherwise leak an extra column.
+      val rangeHasLineComment = expression.loopRange?.let { hasLeadingLineComment(it) } ?: false
+      builder.block(expressionBreakIndent, isEnabled = rangeHasLineComment) {
+        builder.token("in")
+        builder.block {
+          builder.breakOp(
+              Doc.FillMode.UNIFIED,
+              " ",
+              if (rangeHasLineComment) ZERO else expressionBreakIndent,
+          )
+          builder.block(expressionBreakIndent) { format(expression.loopRange) }
+        }
       }
       builder.token(")")
       builder.space()
@@ -335,24 +351,53 @@ internal class ControlFlowExpressionFormatterImpl : ControlFlowExpressionFormatt
       return
     }
 
+    // Open the indented block before the keyword, so a line comment trailing the keyword or the
+    // paren still leaves the condition on a continuation-indented line (#692). This mirrors how
+    // call arguments are emitted inside their indent block. Without trailing-comma management the
+    // block is only added when such a comment is present, since it would otherwise shift ordinary
+    // continuation indents.
+    val indentCondition = options.manageTrailingCommas || hasLeadingLineComment(condition)
     builder.block {
-      builder.token(keyword)
-      builder.space()
-      if (surroundConditionWithParens) {
-        builder.token("(")
-      }
-      if (options.manageTrailingCommas) {
-        builder.block(expressionBreakIndent) {
+      builder.block(expressionBreakIndent, isEnabled = indentCondition) {
+        builder.token(keyword)
+        builder.space()
+        if (surroundConditionWithParens) {
+          builder.token("(")
+        }
+        if (options.manageTrailingCommas) {
           builder.breakOp(Doc.FillMode.UNIFIED, "", ZERO)
           format(condition)
-          builder.breakOp(Doc.FillMode.UNIFIED, "", -expressionBreakIndent)
+          if (surroundConditionWithParens) {
+            builder.breakOp(Doc.FillMode.UNIFIED, "", -expressionBreakIndent)
+          }
+        } else {
+          builder.block { format(condition) }
         }
-      } else {
-        builder.block { format(condition) }
       }
     }
     if (surroundConditionWithParens) {
       builder.token(")")
     }
+  }
+
+  /**
+   * Returns whether a line comment sits between the condition and its keyword or opening paren,
+   * e.g. the `// foo` in `if (// foo\nx)`. Such a comment forces a line break that still needs
+   * the continuation indent.
+   */
+  context(_: FormatterStateHolder)
+  private fun hasLeadingLineComment(condition: KtExpression): Boolean {
+    // Ascend through transparent single-child containers (e.g. a for-loop range is wrapped in
+    // a KtContainerNode), so sibling lookup starts at the same source offset.
+    var node: PsiElement = condition
+    while (node.parent is KtContainerNode && node.parent.firstChild == node) {
+      node = node.parent
+    }
+    var sibling = node.prevSibling
+    while (sibling is PsiWhiteSpace || sibling is PsiComment) {
+      if (sibling is PsiComment && sibling.text.startsWith("//")) return true
+      sibling = sibling.prevSibling
+    }
+    return false
   }
 }

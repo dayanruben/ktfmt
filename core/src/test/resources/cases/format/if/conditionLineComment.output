@@ -1,0 +1,7 @@
+fun f(x: Boolean) {
+  if ( // foo
+      x
+  ) {
+    bar()
+  }
+}
