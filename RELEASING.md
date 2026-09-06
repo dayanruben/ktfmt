@@ -4,11 +4,13 @@
 2. Create a new Release in GitHub. A GitHub Action is automatically triggered and builds and publishes the artifacts to
     1. Maven
     2. IntelliJ Plugin marketplace
-3. TODO: also automate website generation (https://facebook.github.io/ktfmt/) and the AWS Lambda that powers it. For now, you must clone the repo locally, and manually run some steps.
-    1. pushd online_formatter; ./build_and_deploy.sh; popd
-        1. Credentials should be configured using https://docs.aws.amazon.com/cli/latest/topic/config-vars.html#credentials
-    2. Follow instructions in website/README.md
 
 ## Snapshot Publishing
 
-When `ktfmt.version` in `gradle.properties` ends with `-SNAPSHOT`, the `Publish Maven Snapshot` workflow publishes `:ktfmt` snapshots to Sonatype's snapshots repository on pushes to `main` and from manual dispatches. The workflow uses the same OSSRH and GPG secrets as the release workflow, and only runs the direct Maven snapshot publication task; it does not close or release staging repositories.
+When `ktfmt.version` in `gradle.properties` ends with `-SNAPSHOT`, `:ktfmt` snapshots can be published to Sonatype's snapshots repository with:
+
+```
+./gradlew :ktfmt:publishMavenPublicationToSonatypeSnapshotsRepository
+```
+
+The snapshot repository is only registered for `-SNAPSHOT` versions and uses the same OSSRH (`OSSRH_USERNAME`/`OSSRH_PASSWORD`) and GPG (`SIGN_BUILD`, signing credentials) secrets as the release workflow. It only runs the direct Maven snapshot publication task; it does not close or release staging repositories.
