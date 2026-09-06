@@ -1,0 +1,5 @@
+// PRESERVE_LAMBDA_BREAKS false
+
+fun f() {
+  val x = foo { bar() }
+}

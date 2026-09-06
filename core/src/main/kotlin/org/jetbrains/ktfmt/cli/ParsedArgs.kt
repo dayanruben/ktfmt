@@ -100,6 +100,8 @@ data class ParsedArgs(
         |  --set-exit-if-changed             Sets exit code to 1 if any input file was not
         |                                        formatted/touched
         |  --do-not-remove-unused-imports    Leaves all imports in place, even if not used
+        |  --do-not-preserve-lambda-breaks   Collapse single-statement lambdas even if the source
+        |                                        breaks them across lines
         |  --enable-editorconfig             Enable .editorconfig overrides for supported formatting options (limited)
         |                                        see https://github.com/Kotlin/ktfmt/blob/main/README.md
         |  --quiet                           Suppress all non-error output
@@ -127,6 +129,7 @@ data class ParsedArgs(
       var dryRun = false
       var setExitIfChanged = false
       var removeUnusedImports = true
+      var preserveLambdaBreaks = true
       var stdinName: String? = null
       var editorConfig = false
       var quiet = false
@@ -158,6 +161,7 @@ data class ParsedArgs(
           arg == "--dry-run" || arg == "-n" -> dryRun = true
           arg == "--set-exit-if-changed" -> setExitIfChanged = true
           arg == "--do-not-remove-unused-imports" -> removeUnusedImports = false
+          arg == "--do-not-preserve-lambda-breaks" -> preserveLambdaBreaks = false
           arg == "--enable-editorconfig" -> editorConfig = true
           arg == "--quiet" -> quiet = true
           arg == "--experimental-engine" -> {
@@ -267,6 +271,7 @@ data class ParsedArgs(
               formattingOptions.copy(
                   removeUnusedImports = removeUnusedImports,
                   experimentalEngine = useExperimentalEngine,
+                  preserveLambdaBreaks = preserveLambdaBreaks,
               ),
               dryRun,
               setExitIfChanged,

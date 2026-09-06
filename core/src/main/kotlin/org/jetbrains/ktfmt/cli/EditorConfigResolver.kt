@@ -53,6 +53,13 @@ object EditorConfigResolver {
           PropertyType.PropertyValueParser.POSITIVE_INT_VALUE_PARSER,
       )
 
+  private val preserveLambdaBreaks: PropertyType<Boolean> =
+      PropertyType.LowerCasingPropertyType(
+          "ktfmt_preserve_lambda_breaks",
+          "Preserve user-authored line breaks inside lambda bodies",
+          PropertyType.PropertyValueParser.BOOLEAN_VALUE_PARSER,
+      )
+
   private val commaManagementStrategy: PropertyType<TrailingCommaManagementStrategy> =
       PropertyType.LowerCasingPropertyType(
           "ktfmt_trailing_comma_management_strategy",
@@ -78,6 +85,7 @@ object EditorConfigResolver {
             .type(ijContinuationIndentSize)
             .type(ijKotlinContinuationIndentSize)
             .type(commaManagementStrategy)
+            .type(preserveLambdaBreaks)
             .build()
       }
 
@@ -124,12 +132,16 @@ object EditorConfigResolver {
     val trailingCommaStrategy =
         getValue(commaManagementStrategy, baseOptions.trailingCommaManagementStrategy, false)
 
+    val preserveLambdaBreaksValue =
+        getValue(preserveLambdaBreaks, baseOptions.preserveLambdaBreaks, false)
+
     val resolved =
         baseOptions.copy(
             maxWidth = maxWidth,
             blockIndent = blockIndent,
             continuationIndent = continuationIndent,
             trailingCommaManagementStrategy = trailingCommaStrategy,
+            preserveLambdaBreaks = preserveLambdaBreaksValue,
         )
     return resolved
   }

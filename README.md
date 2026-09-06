@@ -92,6 +92,7 @@ following subset of editorconfig properties:
 | `indent_size`<br/>*or `tab_width` if `indent_size = tab`* | will override the block indent                                                                   |
 | `ij_continuation_indent_size`                             | will override the continuation indent                                                            |
 | `ktfmt_trailing_comma_management_strategy`                | one of `none`, `only_add` or `complete`<br/>will override the trailing comma management strategy |
+| `ktfmt_preserve_lambda_breaks`                            | `false` collapses single-statement lambdas even if the source breaks them across lines        |
 
 When formatting source from stdin, pass `--stdin-name=<path>` to resolve EditorConfig settings as if the input were located at that path. The named file does not need to exist and is not read or modified.
 
@@ -106,7 +107,10 @@ where nesting carries semantic meaning (Jetpack Compose UI hierarchies, Kotlin G
 without ktfmt prescribing a specific outcome.
 
 A lambda body whose source spans multiple lines stays multi-line; one that fits on a single line
-stays single-line if written that way. For example, the following is left as-is:
+stays single-line if written that way. Pass `--do-not-preserve-lambda-breaks` (or set
+`ktfmt_preserve_lambda_breaks = false` with `--enable-editorconfig`) to collapse single-statement
+lambdas regardless of source breaks, so equivalent syntax trees always format identically.
+For example, the following is left as-is:
 
 ```kotlin
 // Multi-line in source is preserved

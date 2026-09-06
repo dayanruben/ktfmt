@@ -365,4 +365,49 @@ class EditorConfigResolverTest {
         EditorConfigResolver.resolveFormattingOptions(ktsInTest, Formatter.GOOGLE_FORMAT),
     ) // root=true stops even non-matching fall-through
   }
+
+  @Test
+  fun `ktfmt_preserve_lambda_breaks defaults to base options`() {
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    assertEquals(
+        Formatter.GOOGLE_FORMAT,
+        EditorConfigResolver.resolveFormattingOptions(file, Formatter.GOOGLE_FORMAT),
+    )
+  }
+
+  @Test
+  fun `overrides preserveLambdaBreaks based on editorconfig ktfmt_preserve_lambda_breaks`() {
+    val conf = root.resolve(".editorconfig")
+    conf.writeText(
+        """
+        root = true
+        [*.kt]
+        ktfmt_preserve_lambda_breaks = false
+        """
+            .trimIndent(),
+    )
+
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    val resolved = EditorConfigResolver.resolveFormattingOptions(file, Formatter.META_FORMAT)
+    assertEquals(Formatter.META_FORMAT.copy(preserveLambdaBreaks = false), resolved)
+  }
+
+  @Test
+  fun `ignores invalid ktfmt_preserve_lambda_breaks`() {
+    val conf = root.resolve(".editorconfig")
+    conf.writeText(
+        """
+        root = true
+        [*.kt]
+        ktfmt_preserve_lambda_breaks = whatever
+        """
+            .trimIndent(),
+    )
+
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    assertEquals(
+        Formatter.META_FORMAT,
+        EditorConfigResolver.resolveFormattingOptions(file, Formatter.META_FORMAT),
+    )
+  }
 }

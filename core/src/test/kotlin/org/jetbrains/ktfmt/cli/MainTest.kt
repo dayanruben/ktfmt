@@ -941,6 +941,62 @@ class MainTest {
   }
 
   @Test
+  fun `--do-not-preserve-lambda-breaks collapses source-multiline lambdas (file)`() {
+    val code =
+        """
+        |fun f() {
+        |  val x = foo {
+        |    bar()
+        |  }
+        |}
+        |"""
+            .trimMargin()
+    val file = root.resolve("foo.kt")
+    file.writeText(code, UTF_8)
+
+    val exitCode =
+        Main(
+                emptyInput,
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf("--do-not-preserve-lambda-breaks", file.toString()),
+            )
+            .run()
+
+    assertEquals(0, exitCode)
+    assertEquals(
+        """
+        |fun f() {
+        |  val x = foo { bar() }
+        |}
+        |"""
+            .trimMargin(),
+        file.readText(),
+    )
+  }
+
+  @Test
+  fun `source-multiline lambdas are preserved by default (file)`() {
+    val code =
+        """
+        |fun f() {
+        |  val x = foo {
+        |    bar()
+        |  }
+        |}
+        |"""
+            .trimMargin()
+    val file = root.resolve("foo.kt")
+    file.writeText(code, UTF_8)
+
+    val exitCode =
+        Main(emptyInput, PrintStream(out), PrintStream(err), arrayOf(file.toString())).run()
+
+    assertEquals(0, exitCode)
+    assertEquals(code, file.readText())
+  }
+
+  @Test
   fun `--lines rejects directories that expand to multiple files`() {
     val dir = root.resolve("dir")
     dir.mkdirs()
