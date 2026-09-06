@@ -957,4 +957,145 @@ class MainTest {
         "partial formatting is only supported for a single file",
     )
   }
+
+  @Test
+  fun `file disabled by editorconfig is left untouched`() {
+    root
+        .resolve(".editorconfig")
+        .writeText(
+            """
+            root = true
+            [*.generated.kt]
+            ktfmt_disabled = true
+            """
+                .trimIndent(),
+            UTF_8,
+        )
+    val code = """fun f () =    println( "hello, world" )"""
+    val file = root.resolve("foo.generated.kt")
+    file.writeText(code, UTF_8)
+
+    val exitCode =
+        Main(
+                emptyInput,
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf("--enable-editorconfig", file.toString()),
+            )
+            .run()
+
+    assertEquals(0, exitCode)
+    assertEquals(code, file.readText())
+    assertContains(err.toString(testCharset), "Skipping")
+  }
+
+  @Test
+  fun `editorconfig disabled flag is ignored without --enable-editorconfig`() {
+    root
+        .resolve(".editorconfig")
+        .writeText(
+            """
+            root = true
+            [*.kt]
+            ktfmt_disabled = true
+            """
+                .trimIndent(),
+            UTF_8,
+        )
+    val file = root.resolve("foo.kt")
+    file.writeText("""fun f () =    println( "hello, world" )""", UTF_8)
+
+    Main(emptyInput, PrintStream(out), PrintStream(err), arrayOf(file.toString())).run()
+
+    assertEquals("""fun f() = println("hello, world")""" + "\n", file.readText())
+  }
+
+  @Test
+  fun `--dry-run does not list files disabled by editorconfig`() {
+    root
+        .resolve(".editorconfig")
+        .writeText(
+            """
+            root = true
+            [*.kt]
+            ktfmt_disabled = true
+            """
+                .trimIndent(),
+            UTF_8,
+        )
+    val code = """fun f () =    println( "hello, world" )"""
+    val file = root.resolve("foo.kt")
+    file.writeText(code, UTF_8)
+
+    val exitCode =
+        Main(
+                emptyInput,
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf("--dry-run", "--enable-editorconfig", file.toString()),
+            )
+            .run()
+
+    assertEquals(0, exitCode)
+    assertEquals("", out.toString(UTF_8))
+    assertEquals(code, file.readText())
+  }
+
+  @Test
+  fun `--set-exit-if-changed exits 0 for files disabled by editorconfig`() {
+    root
+        .resolve(".editorconfig")
+        .writeText(
+            """
+            root = true
+            [*.kt]
+            ktfmt_disabled = true
+            """
+                .trimIndent(),
+            UTF_8,
+        )
+    val file = root.resolve("foo.kt")
+    file.writeText("""fun f () =    println( "hello, world" )""", UTF_8)
+
+    val exitCode =
+        Main(
+                emptyInput,
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf("--set-exit-if-changed", "--enable-editorconfig", file.toString()),
+            )
+            .run()
+
+    assertEquals(0, exitCode)
+  }
+
+  @Test
+  fun `stdin with disabled stdin-name passes input through unchanged`() {
+    root
+        .resolve(".editorconfig")
+        .writeText(
+            """
+            root = true
+            [src/Generated.kt]
+            ktfmt_disabled = true
+            """
+                .trimIndent(),
+            UTF_8,
+        )
+    val namedFile = root.resolve("src/Generated.kt")
+    val code = """fun f () =    println( "hello, world" )"""
+
+    val exitCode =
+        Main(
+                code.byteInputStream(),
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf("--enable-editorconfig", "--stdin-name=$namedFile", "-"),
+            )
+            .run()
+
+    assertEquals(0, exitCode)
+    assertEquals(code, out.toString(UTF_8))
+    assertFalse(namedFile.exists())
+  }
 }

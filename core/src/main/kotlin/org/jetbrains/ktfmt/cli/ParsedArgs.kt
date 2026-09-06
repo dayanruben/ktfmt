@@ -100,7 +100,7 @@ data class ParsedArgs(
         |  --set-exit-if-changed             Sets exit code to 1 if any input file was not
         |                                        formatted/touched
         |  --do-not-remove-unused-imports    Leaves all imports in place, even if not used
-        |  --enable-editorconfig             Enable .editorconfig overrides for supported formatting options (limited)
+        |  --enable-editorconfig             Enable .editorconfig overrides for supported formatting options and file exclusion (limited)
         |                                        see https://github.com/Kotlin/ktfmt/blob/main/README.md
         |  --quiet                           Suppress all non-error output
         |

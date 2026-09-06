@@ -92,6 +92,7 @@ following subset of editorconfig properties:
 | `indent_size`<br/>*or `tab_width` if `indent_size = tab`* | will override the block indent                                                                   |
 | `ij_continuation_indent_size`                             | will override the continuation indent                                                            |
 | `ktfmt_trailing_comma_management_strategy`                | one of `none`, `only_add` or `complete`<br/>will override the trailing comma management strategy |
+| `ktfmt_disabled`                                            | `true` skips formatting for matching files, e.g. `[*.generated.kt]`                               |
 
 When formatting source from stdin, pass `--stdin-name=<path>` to resolve EditorConfig settings as if the input were located at that path. The named file does not need to exist and is not read or modified.
 

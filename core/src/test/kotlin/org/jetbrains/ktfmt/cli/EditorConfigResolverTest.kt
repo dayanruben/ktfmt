@@ -25,6 +25,8 @@ import org.jetbrains.ktfmt.format.TrailingCommaManagementStrategy
 import org.jetbrains.ktfmt.format.TrailingCommaManagementStrategy.ONLY_ADD
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -364,5 +366,75 @@ class EditorConfigResolverTest {
         Formatter.GOOGLE_FORMAT,
         EditorConfigResolver.resolveFormattingOptions(ktsInTest, Formatter.GOOGLE_FORMAT),
     ) // root=true stops even non-matching fall-through
+  }
+
+  @Test
+  fun `ktfmt_disabled defaults to false`() {
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    assertFalse(EditorConfigResolver.isDisabled(file))
+  }
+
+  @Test
+  fun `ktfmt_disabled = true disables formatting`() {
+    val conf = root.resolve(".editorconfig")
+    conf.writeText(
+        """
+        root = true
+        [*.kt]
+        ktfmt_disabled = true
+        """
+            .trimIndent(),
+    )
+
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    assertTrue(EditorConfigResolver.isDisabled(file))
+  }
+
+  @Test
+  fun `ktfmt_disabled = false keeps formatting enabled`() {
+    val conf = root.resolve(".editorconfig")
+    conf.writeText(
+        """
+        root = true
+        [*.kt]
+        ktfmt_disabled = false
+        """
+            .trimIndent(),
+    )
+
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    assertFalse(EditorConfigResolver.isDisabled(file))
+  }
+
+  @Test
+  fun `ktfmt_disabled only applies to matching files`() {
+    val conf = root.resolve(".editorconfig")
+    conf.writeText(
+        """
+        root = true
+        [*.generated.kt]
+        ktfmt_disabled = true
+        """
+            .trimIndent(),
+    )
+
+    assertTrue(EditorConfigResolver.isDisabled(root.resolve("src/main/kotlin/Example.generated.kt")))
+    assertFalse(EditorConfigResolver.isDisabled(root.resolve("src/main/kotlin/Example.kt")))
+  }
+
+  @Test
+  fun `invalid ktfmt_disabled is ignored`() {
+    val conf = root.resolve(".editorconfig")
+    conf.writeText(
+        """
+        root = true
+        [*.kt]
+        ktfmt_disabled = whatever
+        """
+            .trimIndent(),
+    )
+
+    val file = root.resolve("src/main/kotlin/Example.kt")
+    assertFalse(EditorConfigResolver.isDisabled(file))
   }
 }

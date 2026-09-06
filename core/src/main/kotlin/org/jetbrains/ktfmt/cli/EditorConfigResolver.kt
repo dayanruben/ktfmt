@@ -53,6 +53,13 @@ object EditorConfigResolver {
           PropertyType.PropertyValueParser.POSITIVE_INT_VALUE_PARSER,
       )
 
+  private val ktfmtDisabled: PropertyType<Boolean> =
+      PropertyType.LowerCasingPropertyType(
+          "ktfmt_disabled",
+          "Disables ktfmt formatting for matching files",
+          PropertyType.PropertyValueParser.BOOLEAN_VALUE_PARSER,
+      )
+
   private val commaManagementStrategy: PropertyType<TrailingCommaManagementStrategy> =
       PropertyType.LowerCasingPropertyType(
           "ktfmt_trailing_comma_management_strategy",
@@ -78,6 +85,7 @@ object EditorConfigResolver {
             .type(ijContinuationIndentSize)
             .type(ijKotlinContinuationIndentSize)
             .type(commaManagementStrategy)
+            .type(ktfmtDisabled)
             .build()
       }
 
@@ -102,6 +110,12 @@ object EditorConfigResolver {
       resourcePropertiesService
           .queryProperties(Resource.Resources.ofPath(file.toPath().absolute(), Charsets.UTF_8))
           .resolveFormattingOptions(baseOptions)
+
+  /** Returns whether ktfmt is disabled for [file] via the `ktfmt_disabled` property. */
+  fun isDisabled(file: File): Boolean =
+      resourcePropertiesService
+          .queryProperties(Resource.Resources.ofPath(file.toPath().absolute(), Charsets.UTF_8))
+          .getValue(ktfmtDisabled, false, false)
 
   private fun ResourceProperties.resolveFormattingOptions(
       baseOptions: FormattingOptions,

@@ -147,6 +147,20 @@ class Main(
     val fileName = file?.toString() ?: args.stdinName ?: "<stdin>"
     try {
       val editorConfigFile = file ?: args.stdinName?.takeIf { it.isNotEmpty() }?.let(::File)
+      if (args.editorConfig &&
+          editorConfigFile != null &&
+          EditorConfigResolver.isDisabled(editorConfigFile)) {
+        if (!args.quiet) {
+          err.println("Skipping $fileName (disabled by .editorconfig)")
+        }
+        if (file == null && !args.dryRun) {
+          // Pass stdin through unchanged.
+          BufferedWriter(OutputStreamWriter(out, UTF_8)).use {
+            it.write(input.readBytes().toString(UTF_8))
+          }
+        }
+        return true
+      }
       val formattingOptions =
           if (!args.editorConfig || editorConfigFile == null) {
             args.formattingOptions
