@@ -1,0 +1,18 @@
+// MAX_WIDTH 40
+fun foo() = with(bar) {
+  foo()
+  //
+}
+
+fun foo() = with(bar, baz) {
+  foo()
+  //
+}
+
+fun foo() =
+    with(
+        veryLongArgumentNameThatDoesNotFit,
+    ) {
+      foo()
+      //
+    }

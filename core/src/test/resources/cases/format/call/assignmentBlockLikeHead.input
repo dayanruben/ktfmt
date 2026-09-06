@@ -1,0 +1,21 @@
+// MAX_WIDTH 40
+fun foo() {
+  val foo =
+      with(bar) {
+        foo()
+        //
+      }
+
+  foo =
+      with(bar) {
+        foo()
+        //
+      }
+
+  val foo =
+      with(
+          veryLongArgumentNameThatDoesNotFit) {
+            foo()
+            //
+          }
+}

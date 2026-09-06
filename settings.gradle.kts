@@ -14,25 +14,33 @@
  * limitations under the License.
  */
 
+pluginManagement {
+  repositories {
+    mavenCentral()
+    gradlePluginPortal()
+  }
+}
+
 rootProject.name = "ktfmt-parent"
 
 include(
     ":ktfmt",
-    ":lambda",
     ":idea_plugin",
 )
 
 project(":ktfmt").projectDir = file("core")
 
-project(":lambda").projectDir = file("online_formatter")
-
 project(":idea_plugin").projectDir = file("ktfmt_idea_plugin")
 
 dependencyResolutionManagement {
   versionCatalogs {
-    create("libs") {
-      val ktfmtVersion = providers.gradleProperty("ktfmt.version").get()
-      version("ktfmt", ktfmtVersion)
-    }
+    create("nativeImageLibs") { from(files("gradle/native-image.versions.toml")) }
   }
+  repositories {
+    mavenCentral()
+  }
+}
+
+plugins {
+  id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
