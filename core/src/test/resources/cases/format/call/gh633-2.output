@@ -2,19 +2,19 @@
 
 fun quux() =
     listOf(
+        "a",
+        "b",
+        listOf(
             "a",
             "b",
-            listOf(
-                "a",
-                "b",
-            ),
-            listOf(
-                    "a",
-                    "b",
-                )
-                .baz()
-                .bar(1, 2)
-                .fold { it.boom() })
+        ),
+        listOf(
+            "a",
+            "b",
+        )
+            .baz()
+            .bar(1, 2)
+            .fold { it.boom() })
         .baz()
 
 fun quux() {
@@ -24,18 +24,18 @@ fun quux() {
   )
 
   listOf(
+      "a",
+      "b",
+      listOf(
           "a",
           "b",
-          listOf(
-              "a",
-              "b",
-          ),
-          listOf(
-                  "a",
-                  "b",
-              )
-              .baz()
-              .bar(1, 2)
-              .fold { it.boom() })
+      ),
+      listOf(
+          "a",
+          "b",
+      )
+          .baz()
+          .bar(1, 2)
+          .fold { it.boom() })
       .baz()
 }

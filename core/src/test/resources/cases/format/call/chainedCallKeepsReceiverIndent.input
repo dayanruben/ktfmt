@@ -1,0 +1,10 @@
+fun quux() {
+  listOf(
+      1 to "one",
+      2 to "two",
+  )
+      .forEach { (left, right) ->
+        foo()
+        bar()
+      }
+}

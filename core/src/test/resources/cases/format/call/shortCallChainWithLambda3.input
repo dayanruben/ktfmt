@@ -3,5 +3,5 @@
 // FILE_TYPE SCRIPT
 
 getRainbow(
-        aa, bb, cc)
+    aa, bb, cc)
     .z { it }

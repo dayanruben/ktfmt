@@ -487,8 +487,8 @@ internal open class CallFormatterImpl : CallFormatter {
     builder.block(expressionBreakIndent) {
       // allows adjusting arguments indentation if a break will be made
       val nameTag = BreakTag()
-      for ((ktExpression, openingGroups, closingGroups, isTrailingLambda, isLast) in
-          groupingInfos) {
+      for ((index, group) in groupingInfos.withIndex()) {
+        val (ktExpression, openingGroups, closingGroups, isTrailingLambda, isLast) = group
         if (ktExpression is KtQualifiedExpression) {
           builder.breakOp(Doc.FillMode.UNIFIED, "", ZERO, Optional.of(nameTag))
         }
@@ -520,7 +520,12 @@ internal open class CallFormatterImpl : CallFormatter {
           }
           is KtArrayAccessExpression -> formatArrayAccessBrackets(ktExpression)
           is KtPostfixExpression -> builder.token(ktExpression.operationReference.text)
-          else -> format(ktExpression)
+          else -> {
+            // The receiver (first group) is laid out as if standalone: compensate the chain
+            // block above, so adding a chained call doesn't re-indent it (#633).
+            if (index == 0) builder.block(-expressionBreakIndent) { format(ktExpression) }
+            else format(ktExpression)
+          }
         }
         repeat(closingGroups) { builder.close() }
 
