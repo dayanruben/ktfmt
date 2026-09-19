@@ -24,7 +24,7 @@ plugins {
   alias(libs.plugins.dokka)
   alias(libs.plugins.dokka.javadoc)
   alias(libs.plugins.shadowJar)
-  id("ktfmt.ktfmt-file-generator")
+  id("ktfmt.generate-ktfmt-file")
   id("ktfmt.native-image")
   id("ktfmt.publishing")
 }
@@ -96,6 +96,11 @@ tasks {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     failOnDuplicateEntries = true
   }
+}
+
+publishing.publications.named<MavenPublication>("maven") {
+  artifact(tasks.named("sourcesJar"))
+  artifact(tasks.named("javadocJar"))
 }
 
 kotlin {
