@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.65]
+
 ### Added
 
 - Support partial formatting with `--lines`/`--line` and matching
@@ -21,7 +23,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 
 - Trailing comma is now added when a single parameter is formatted onto its own line (https://github.com/facebook/ktfmt/issues/461) 
-- Migrated from `com.facebook.ktfmt` package to `org.jetbrains.ktfmt`
+- Migrated from `com.facebook.ktfmt` package to `org.jetbrains.kotlinx.ktfmt`
 - Use the file's extension to differentiate between scripts and regular files in the parser
 
 ### Fixed
