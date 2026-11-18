@@ -418,7 +418,9 @@ class EditorConfigResolverTest {
             .trimIndent(),
     )
 
-    assertTrue(EditorConfigResolver.isDisabled(root.resolve("src/main/kotlin/Example.generated.kt")))
+    assertTrue(
+        EditorConfigResolver.isDisabled(root.resolve("src/main/kotlin/Example.generated.kt")),
+    )
     assertFalse(EditorConfigResolver.isDisabled(root.resolve("src/main/kotlin/Example.kt")))
   }
 

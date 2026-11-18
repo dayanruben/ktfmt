@@ -76,18 +76,17 @@ object EditorConfigResolver {
           TrailingCommaManagementStrategy.entries.map { it.name.lowercase() }.toSet(),
       )
 
-  private val propertyTypeRegistry by
-      lazy {
-        PropertyTypeRegistry.builder()
-            .defaults()
-            .type(PropertyType.max_line_length) // missing from defaults?
-            .type(ijKotlinIndentSize)
-            .type(ijContinuationIndentSize)
-            .type(ijKotlinContinuationIndentSize)
-            .type(commaManagementStrategy)
-            .type(ktfmtDisabled)
-            .build()
-      }
+  private val propertyTypeRegistry by lazy {
+    PropertyTypeRegistry.builder()
+        .defaults()
+        .type(PropertyType.max_line_length) // missing from defaults?
+        .type(ijKotlinIndentSize)
+        .type(ijContinuationIndentSize)
+        .type(ijKotlinContinuationIndentSize)
+        .type(commaManagementStrategy)
+        .type(ktfmtDisabled)
+        .build()
+  }
 
   private object Cache : org.ec4j.core.Cache {
     val cached = ConcurrentHashMap<Resource, EditorConfig>()
@@ -98,13 +97,12 @@ object EditorConfigResolver {
     ): EditorConfig = cached.computeIfAbsent(editorConfigFile, loader::load)
   }
 
-  private val resourcePropertiesService: ResourcePropertiesService by
-      lazy {
-        ResourcePropertiesService.builder()
-            .cache(Cache)
-            .loader(EditorConfigLoader.of(CURRENT, propertyTypeRegistry))
-            .build()
-      }
+  private val resourcePropertiesService: ResourcePropertiesService by lazy {
+    ResourcePropertiesService.builder()
+        .cache(Cache)
+        .loader(EditorConfigLoader.of(CURRENT, propertyTypeRegistry))
+        .build()
+  }
 
   fun resolveFormattingOptions(file: File, baseOptions: FormattingOptions): FormattingOptions =
       propertiesFor(file).resolveFormattingOptions(baseOptions)
@@ -122,8 +120,9 @@ object EditorConfigResolver {
   }
 
   private fun propertiesFor(file: File): ResourceProperties =
-      resourcePropertiesService
-          .queryProperties(Resource.Resources.ofPath(file.toPath().absolute(), Charsets.UTF_8))
+      resourcePropertiesService.queryProperties(
+          Resource.Resources.ofPath(file.toPath().absolute(), Charsets.UTF_8),
+      )
 
   private fun ResourceProperties.isKtfmtDisabled(): Boolean = getValue(ktfmtDisabled, false, false)
 
