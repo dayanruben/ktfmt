@@ -108,9 +108,9 @@ without ktfmt prescribing a specific outcome.
 
 A lambda body whose source spans multiple lines stays multi-line; one that fits on a single line
 stays single-line if written that way. Pass `--do-not-preserve-lambda-breaks` (or set
-`ktfmt_preserve_lambda_breaks = false` with `--enable-editorconfig`) to collapse single-statement
-lambdas regardless of source breaks, so equivalent syntax trees always format identically.
-For example, the following is left as-is:
+`ktfmt_preserve_lambda_breaks = false` with `--enable-editorconfig`) to ignore source line breaks
+when deciding whether a single-statement lambda fits on one line. With the default behavior,
+the following keeps both layouts:
 
 ```kotlin
 // Multi-line in source is preserved
@@ -202,10 +202,6 @@ Choose "Open as a Project".
 
 * Run `./gradlew :ktfmt:shadowJar`
 * Run `java -jar core/build/libs/ktfmt-<VERSION>-with-dependencies.jar`
-
-### Releasing
-
-See [RELEASING.md](RELEASING.md).
 
 ## License
 
