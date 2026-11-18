@@ -16,8 +16,7 @@
 
 import org.jetbrains.dokka.gradle.tasks.DokkaGeneratePublicationTask
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
-import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
-import org.jetbrains.ktfmt.GenerateKtfmtFileTask
+import org.jetbrains.kotlinx.ktfmt.GenerateKtfmtFileTask
 
 plugins {
   kotlin("jvm")
@@ -25,10 +24,9 @@ plugins {
   alias(libs.plugins.dokka)
   alias(libs.plugins.dokka.javadoc)
   alias(libs.plugins.shadowJar)
-  id("maven-publish")
-  id("signing")
-  id("ktfmt.ktfmt-file-generator")
+  id("ktfmt.generate-ktfmt-file")
   id("ktfmt.native-image")
+  id("ktfmt.publishing")
 }
 
 dependencies {
@@ -77,7 +75,9 @@ tasks {
     jvmArgs("-Dfile.encoding=UTF-16")
   }
 
-  withType(Jar::class) { manifest { attributes["Main-Class"] = "org.jetbrains.ktfmt.cli.Main" } }
+  withType(Jar::class) {
+    manifest { attributes["Main-Class"] = "org.jetbrains.kotlinx.ktfmt.cli.Main" }
+  }
 
   register<Jar>("sourcesJar") {
     description = "Sources jar including generated sources and compatibility utils"
@@ -100,6 +100,11 @@ tasks {
   }
 }
 
+publishing.publications.named<MavenPublication>("maven") {
+  artifact(tasks.named("sourcesJar"))
+  artifact(tasks.named("javadocJar"))
+}
+
 kotlin {
   @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class) abiValidation()
 
@@ -118,47 +123,6 @@ kotlin {
   }
 }
 
-group = "org.jetbrains"
+group = "org.jetbrains.kotlinx"
 
 version = rootProject.version
-
-publishing {
-  publications {
-    create<MavenPublication>("maven") {
-      groupId = "org.jetbrains"
-      artifactId = "ktfmt"
-      version = rootProject.version.toString()
-
-      from(components["java"])
-      artifact(tasks.named("sourcesJar"))
-      artifact(tasks.named("javadocJar"))
-
-      pom {
-        name = "Ktfmt"
-        description =
-            "A program that reformats Kotlin source code to comply with the common community standard for Kotlin code conventions."
-        url = "https://github.com/Kotlin/ktfmt"
-        inceptionYear = "2019"
-        developers { developer { name = "Kotlin" } }
-        licenses {
-          license {
-            name = "The Apache License, Version 2.0"
-            url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
-          }
-        }
-        scm {
-          connection = "scm:git:https://github.com/Kotlin/ktfmt.git"
-          developerConnection = "scm:git:git@github.com:Kotlin/ktfmt.git"
-          url = "https://github.com/Kotlin/ktfmt.git"
-        }
-      }
-    }
-  }
-}
-
-if (System.getenv("SIGN_BUILD") != null) {
-  signing {
-    useGpgCmd()
-    sign(publishing.publications["maven"])
-  }
-}
