@@ -75,6 +75,15 @@ offsets (`--offset` and `--length`). Line ranges look like `5` or `1:12,14`, may
 times, and are 1-based. Offset ranges must provide matching `--offset` and `--length` pairs;
 `--length=0` formats the whole line containing the given `--offset`.
 
+Use `<file.kt>:L<lines>` to select different lines in several files in one invocation:
+
+```shell
+ktfmt "src/File1.kt:L1,5:12,14" "src/File2.kt:L42" src/FormatWholeFile.kt
+```
+
+Repeat the same file with another suffix to combine its line ranges. Per-file ranges cannot be
+combined with the single-file options `--lines`, `--offset` or `--length`.
+
 Partial formatting limits the core pretty-print replacements to the selected ranges. Whole-file
 cleanup passes, such as import cleanup and multiline string formatting, still run afterward to match
 [google-java-format's](https://github.com/google/google-java-format#from-the-command-line)

@@ -187,6 +187,21 @@ class ParsedArgsTest {
   }
 
   @Test
+  fun `parseOptions rejects invalid per-file line ranges`() {
+    val parseResult = parseOptions("foo.kt:L4:2")
+    assertEquals(ParseResult.Error("invalid line range for foo.kt: 4:2"), parseResult)
+  }
+
+  @Test
+  fun `parseOptions rejects mixing per-file and global ranges`() {
+    val parseResult = parseOptions("--lines=2", "foo.kt:L3")
+    assertEquals(
+        ParseResult.Error("cannot combine per-file line ranges with --lines or --offset"),
+        parseResult,
+    )
+  }
+
+  @Test
   fun `parseOptions rejects --offset without value`() {
     val parseResult = parseOptions("--offset")
     assertEquals(ParseResult.Error("required value was not provided for: --offset"), parseResult)

@@ -109,7 +109,15 @@ class Main(
       }
     }
 
-    val files: List<File> = expandArgsToFileNames(parsedArgs.fileNames)
+    val missingRangeFile = parsedArgs.fileLineRanges.keys.firstOrNull { !it.isFile }
+    if (missingRangeFile != null) {
+      err.println("Error: line ranges require a Kotlin file: $missingRangeFile")
+      return EXIT_CODE_FAILURE
+    }
+    val expandedFiles = expandArgsToFileNames(parsedArgs.fileNames)
+    val files =
+        if (parsedArgs.fileLineRanges.isEmpty()) expandedFiles
+        else expandedFiles.distinctBy { it.absoluteFile.normalize() }
 
     if (files.isEmpty()) {
       err.println("Error: no .kt files found")
@@ -157,11 +165,13 @@ class Main(
             )
           }
       val code = if (file == null) KotlinCode(input, FileType.SCRIPT) else KotlinCode(file)
+      val lineRanges =
+          file?.let { args.fileLineRanges[it.absoluteFile.normalize()] } ?: args.lineRanges
       val formattedCode =
-          if (!args.isPartialFormat()) {
+          if (lineRanges.isEmpty && args.characterRanges.isEmpty) {
             Formatter.format(formattingOptions, code)
           } else {
-            val ranges = args.characterRanges + code.lineRangesToCharRanges(args.lineRanges)
+            val ranges = args.characterRanges + code.lineRangesToCharRanges(lineRanges)
             Formatter.format(formattingOptions, code, ranges)
           }
       val alreadyFormatted = code.toString() == formattedCode

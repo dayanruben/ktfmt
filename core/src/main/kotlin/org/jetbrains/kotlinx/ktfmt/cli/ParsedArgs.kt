@@ -47,6 +47,8 @@ data class ParsedArgs(
   internal val lineRanges: RangeSet<Int> = TreeRangeSet.create()
   /** Zero-indexed character ranges to format, using closed-open bounds. */
   internal val characterRanges: RangeSet<Int> = TreeRangeSet.create()
+  /** Per-file line selections keyed by normalized absolute path. */
+  internal val fileLineRanges = mutableMapOf<File, RangeSet<Int>>()
 
   companion object {
 
@@ -92,6 +94,8 @@ data class ParsedArgs(
         |                                        enabled, use for configuration lookup
         |  --lines=<lines>                   Line range(s) to format, like 5 or 1:12,14.
         |                                        May be used multiple times.
+        |  <file.kt>:L<lines>                Select line ranges for an individual file, like
+        |                                        src/File.kt:L1,5:12,14. May be used for many files.
         |  --offset=<offset>                 Character offset to format, paired with --length.
         |                                        May be used multiple times.
         |  --length=<length>                 Character length to format, paired with --offset.
@@ -132,6 +136,7 @@ data class ParsedArgs(
       var quiet = false
       var useExperimentalEngine = false
       val lineRanges = TreeRangeSet.create<Int>()
+      val fileLineRanges = mutableMapOf<File, RangeSet<Int>>()
       val offsets = mutableListOf<Int>()
       val lengths = mutableListOf<Int>()
 
@@ -229,7 +234,20 @@ data class ParsedArgs(
               }
           arg.startsWith("--") -> return ParseResult.Error("Unexpected option: $arg")
           arg.startsWith("@") -> return ParseResult.Error("Unexpected option: $arg")
-          else -> fileNames.add(arg)
+          else -> {
+            val fileLineRangeArg = splitFileLineRange(arg)
+            if (fileLineRangeArg == null) {
+              fileNames.add(arg)
+            } else {
+              val (fileName, lines) = fileLineRangeArg
+              val file = File(fileName).absoluteFile.normalize()
+              val ranges = fileLineRanges.getOrPut(file) { TreeRangeSet.create() }
+              if (parseLineRanges(ranges, lines) is LineRangeParseResult.Error) {
+                return ParseResult.Error("invalid line range for $fileName: $lines")
+              }
+              fileNames.add(fileName)
+            }
+          }
         }
         i++
       }
@@ -257,8 +275,13 @@ data class ParsedArgs(
         characterRanges.add(Range.closedOpen(offsets[index], offsets[index] + length))
       }
 
-      if ((!lineRanges.isEmpty || !characterRanges.isEmpty) && fileNames.size != 1) {
-        return ParseResult.Error("partial formatting is only supported for a single file")
+      if (!lineRanges.isEmpty || !characterRanges.isEmpty) {
+        if (fileLineRanges.isNotEmpty()) {
+          return ParseResult.Error("cannot combine per-file line ranges with --lines or --offset")
+        }
+        if (fileNames.size != 1) {
+          return ParseResult.Error("partial formatting is only supported for a single file")
+        }
       }
 
       val parsedArgs =
@@ -276,7 +299,18 @@ data class ParsedArgs(
           )
       parsedArgs.lineRanges.addAll(lineRanges)
       parsedArgs.characterRanges.addAll(characterRanges)
+      parsedArgs.fileLineRanges.putAll(fileLineRanges)
       return ParseResult.Ok(parsedArgs)
+    }
+
+    private fun splitFileLineRange(arg: String): Pair<String, String>? {
+      val separator = arg.lastIndexOf(":L")
+      if (separator < 0) return null
+      val fileName = arg.substring(0, separator)
+      val lines = arg.substring(separator + 2)
+      if (!(fileName.endsWith(".kt") || fileName.endsWith(".kts"))) return null
+      if ('/' in lines || '\\' in lines || File(arg).exists()) return null
+      return fileName to lines
     }
 
     private fun parseKeyValueArg(key: String, arg: String): String? {
@@ -309,18 +343,11 @@ data class ParsedArgs(
 
     private fun parseLineRange(arg: String): Range<Int> {
       val parts = arg.split(':')
-      return when (parts.size) {
-        1 -> {
-          val line = parts[0].toInt() - 1
-          Range.closedOpen(line, line + 1)
-        }
-        2 -> {
-          val line0 = parts[0].toInt() - 1
-          val line1 = parts[1].toInt() - 1
-          Range.closedOpen(line0, line1 + 1)
-        }
-        else -> throw IllegalArgumentException(arg)
-      }
+      require(parts.size <= 2)
+      val firstLine = parts[0].toInt()
+      val lastLine = parts.getOrNull(1)?.toInt() ?: firstLine
+      require(firstLine in 1..lastLine)
+      return Range.closedOpen(firstLine - 1, lastLine)
     }
   }
 }

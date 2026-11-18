@@ -941,6 +941,52 @@ class MainTest {
   }
 
   @Test
+  fun `per-file line ranges format different lines across several files`() {
+    val code =
+        "fun test() {\n  val first    =   1\n  val second    =   2\n  val third    =   3\n}\n"
+    val first = root.resolve("first file.kt").apply { writeText(code, UTF_8) }
+    val second = root.resolve("second.kts").apply { writeText(code, UTF_8) }
+    val whole = root.resolve("whole.kt").apply { writeText(code, UTF_8) }
+
+    val exitCode =
+        Main(
+                emptyInput,
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf("$first:L2", "$second:L3", "$first:L4", whole.toString()),
+            )
+            .run()
+
+    assertEquals(0, exitCode)
+    assertEquals(
+        code.replace("first    =   ", "first = ").replace("third    =   ", "third = "),
+        first.readText(UTF_8),
+    )
+    assertEquals(code.replace("second    =   ", "second = "), second.readText(UTF_8))
+    assertEquals(code.replace("    =   ", " = "), whole.readText(UTF_8))
+  }
+
+  @Test
+  fun `missing file with a line range fails before any file is formatted`() {
+    val code = "fun foo ( ) = 1\n"
+    val existing = root.resolve("existing.kt").apply { writeText(code, UTF_8) }
+    val missing = root.resolve("missing.kt")
+
+    val exitCode =
+        Main(
+                emptyInput,
+                PrintStream(out),
+                PrintStream(err),
+                arrayOf(existing.toString(), "$missing:L1"),
+            )
+            .run()
+
+    assertEquals(1, exitCode)
+    assertContains(err.toString(testCharset), missing.name)
+    assertEquals(code, existing.readText(UTF_8))
+  }
+
+  @Test
   fun `--lines rejects directories that expand to multiple files`() {
     val dir = root.resolve("dir")
     dir.mkdirs()
