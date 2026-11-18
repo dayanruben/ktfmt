@@ -18,6 +18,24 @@ We actively welcome your pull requests.
 We use GitHub issues to track public bugs. Please ensure your description is
 clear and has sufficient instructions to be able to reproduce the issue.
 
+## Publishing snapshots
+
+Release automation can publish a Maven snapshot after a successful build of the default branch.
+The Maven repository is available when `ktfmt.version` ends in `-SNAPSHOT` and the snapshot job
+enables it explicitly.
+
+Use a Central Portal user token with permission to publish snapshots for the `org.jetbrains.kotlinx`
+namespace. Provide the token's username and password as
+`ORG_GRADLE_PROJECT_sonatypeSnapshotsUsername` and
+`ORG_GRADLE_PROJECT_sonatypeSnapshotsPassword`, then run the publication task.
+
+```shell
+./gradlew -Pktfmt.publishSonatypeSnapshots=true :ktfmt:publishMavenPublicationToSonatypeSnapshotsRepository
+```
+
+See the [Central Portal snapshot guide](https://central.sonatype.org/publish/publish-portal-snapshots/)
+for namespace setup and how to consume `org.jetbrains.kotlinx:ktfmt` snapshots.
+
 ## License
 By contributing to ktfmt, you agree that your contributions will be licensed
 under the LICENSE file in the root directory of this source tree.
