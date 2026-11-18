@@ -75,110 +75,110 @@ class KtfmtConfigurable(project: Project) :
     }
 
     group("Custom style") {
-          lateinit var maxLineLength: JTextField
-          row("Max line length:") {
-            maxLineLength =
-                textField()
-                    .bindIntText(settings::customMaxLineLength)
-                    .validatePositiveIntegerOrEmpty()
-                    .component
-          }
-
-          lateinit var blockIndent: JTextField
-          row("Block indent size:") {
-            blockIndent =
-                textField()
-                    .bindIntText(settings::customBlockIndent)
-                    .validatePositiveIntegerOrEmpty()
-                    .component
-          }
-
-          lateinit var continuationIndent: JTextField
-          row("Continuation indent size:") {
-            continuationIndent =
-                textField()
-                    .bindIntText(settings::customContinuationIndent)
-                    .validatePositiveIntegerOrEmpty()
-                    .component
-          }
-
-          lateinit var trailingCommaManagementStrategy: JComboBox<TrailingCommaManagementStrategy>
-          row("Trailing commas management") {
-            trailingCommaManagementStrategy =
-                comboBox(TrailingCommaManagementStrategy.entries)
-                    .bindItem(
-                        getter = { settings.customTrailingCommaManagementStrategy },
-                        setter = {
-                          settings.customTrailingCommaManagementStrategy =
-                              it ?: TrailingCommaManagementStrategy.NONE
-                        },
-                    )
-                    .component
-          }
-
-          lateinit var removeUnusedImports: JCheckBox
-          row {
-            removeUnusedImports =
-                checkBox("Remove unused imports")
-                    .bindSelected(settings::customRemoveUnusedImports)
-                    .component
-          }
-
-          lateinit var preserveLambdaBreaks: JCheckBox
-          row {
-                preserveLambdaBreaks =
-                    checkBox("Preserve user-authored line breaks inside lambdas")
-                        .bindSelected(settings::customPreserveLambdaBreaks)
-                        .component
-              }
-              .bottomGap(BottomGap.SMALL)
-
-          row("Copy from:") {
-            // Note: updating must be done via the components, and not the settings,
-            // or the Kotlin DSL bindings will overwrite the values when applying
-            link(Meta.toString()) {
-                  UiFormatterStyle.getStandardFormattingOptions(Meta)
-                      .updateFields(
-                          maxLineLength,
-                          blockIndent,
-                          continuationIndent,
-                          trailingCommaManagementStrategy,
-                          removeUnusedImports,
-                          preserveLambdaBreaks,
-                      )
-                }
+      lateinit var maxLineLength: JTextField
+      row("Max line length:") {
+        maxLineLength =
+            textField()
+                .bindIntText(settings::customMaxLineLength)
+                .validatePositiveIntegerOrEmpty()
                 .component
-                .autoHideOnDisable = false
+      }
 
-            link(Google.toString()) {
-                  UiFormatterStyle.getStandardFormattingOptions(Google)
-                      .updateFields(
-                          maxLineLength,
-                          blockIndent,
-                          continuationIndent,
-                          trailingCommaManagementStrategy,
-                          removeUnusedImports,
-                          preserveLambdaBreaks,
-                      )
-                }
+      lateinit var blockIndent: JTextField
+      row("Block indent size:") {
+        blockIndent =
+            textField()
+                .bindIntText(settings::customBlockIndent)
+                .validatePositiveIntegerOrEmpty()
                 .component
-                .autoHideOnDisable = false
+      }
 
-            link(KotlinLang.toString()) {
-                  UiFormatterStyle.getStandardFormattingOptions(KotlinLang)
-                      .updateFields(
-                          maxLineLength,
-                          blockIndent,
-                          continuationIndent,
-                          trailingCommaManagementStrategy,
-                          removeUnusedImports,
-                          preserveLambdaBreaks,
-                      )
-                }
+      lateinit var continuationIndent: JTextField
+      row("Continuation indent size:") {
+        continuationIndent =
+            textField()
+                .bindIntText(settings::customContinuationIndent)
+                .validatePositiveIntegerOrEmpty()
                 .component
-                .autoHideOnDisable = false
+      }
+
+      lateinit var trailingCommaManagementStrategy: JComboBox<TrailingCommaManagementStrategy>
+      row("Trailing commas management") {
+        trailingCommaManagementStrategy =
+            comboBox(TrailingCommaManagementStrategy.entries)
+                .bindItem(
+                    getter = { settings.customTrailingCommaManagementStrategy },
+                    setter = {
+                      settings.customTrailingCommaManagementStrategy =
+                          it ?: TrailingCommaManagementStrategy.NONE
+                    },
+                )
+                .component
+      }
+
+      lateinit var removeUnusedImports: JCheckBox
+      row {
+        removeUnusedImports =
+            checkBox("Remove unused imports")
+                .bindSelected(settings::customRemoveUnusedImports)
+                .component
+      }
+
+      lateinit var preserveLambdaBreaks: JCheckBox
+      row {
+            preserveLambdaBreaks =
+                checkBox("Preserve user-authored line breaks inside lambdas")
+                    .bindSelected(settings::customPreserveLambdaBreaks)
+                    .component
           }
+          .bottomGap(BottomGap.SMALL)
+
+      row("Copy from:") {
+        // Note: updating must be done via the components, and not the settings,
+        // or the Kotlin DSL bindings will overwrite the values when applying
+        link(Meta.toString()) {
+          UiFormatterStyle.getStandardFormattingOptions(Meta)
+              .updateFields(
+                  maxLineLength,
+                  blockIndent,
+                  continuationIndent,
+                  trailingCommaManagementStrategy,
+                  removeUnusedImports,
+                  preserveLambdaBreaks,
+              )
         }
+            .component
+            .autoHideOnDisable = false
+
+        link(Google.toString()) {
+          UiFormatterStyle.getStandardFormattingOptions(Google)
+              .updateFields(
+                  maxLineLength,
+                  blockIndent,
+                  continuationIndent,
+                  trailingCommaManagementStrategy,
+                  removeUnusedImports,
+                  preserveLambdaBreaks,
+              )
+        }
+            .component
+            .autoHideOnDisable = false
+
+        link(KotlinLang.toString()) {
+          UiFormatterStyle.getStandardFormattingOptions(KotlinLang)
+              .updateFields(
+                  maxLineLength,
+                  blockIndent,
+                  continuationIndent,
+                  trailingCommaManagementStrategy,
+                  removeUnusedImports,
+                  preserveLambdaBreaks,
+              )
+        }
+            .component
+            .autoHideOnDisable = false
+      }
+    }
         .visibleIf(styleComboBox.selectedValueMatches { it == Custom })
         .enabledIf(enabledCheckbox.selected)
   }

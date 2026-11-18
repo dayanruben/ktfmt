@@ -130,11 +130,11 @@ class MainTest {
     val code = "fun    f1 (  "
     val returnValue =
         Main(
-                code.byteInputStream(),
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--stdin-name=file/Foo.kt", "-"),
-            )
+            code.byteInputStream(),
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--stdin-name=file/Foo.kt", "-"),
+        )
             .run()
 
     assertEquals(1, returnValue)
@@ -182,11 +182,11 @@ class MainTest {
         forkJoinPool
             .submit<Int> {
               Main(
-                      emptyInput,
-                      PrintStream(out),
-                      PrintStream(err),
-                      arrayOf(file1.toString(), file2Broken.toString(), file3.toString()),
-                  )
+                  emptyInput,
+                  PrintStream(out),
+                  PrintStream(err),
+                  arrayOf(file1.toString(), file2Broken.toString(), file3.toString()),
+              )
                   .run()
             }
             .get()
@@ -245,11 +245,11 @@ class MainTest {
     fooBar.writeText(code, UTF_8)
 
     Main(
-            emptyInput,
-            PrintStream(out),
-            PrintStream(err),
-            arrayOf("--kotlinlang-style", fooBar.toString()),
-        )
+        emptyInput,
+        PrintStream(out),
+        PrintStream(err),
+        arrayOf("--kotlinlang-style", fooBar.toString()),
+    )
         .run()
 
     assertEquals(code, fooBar.readText())
@@ -278,11 +278,11 @@ class MainTest {
         |"""
             .trimMargin()
     Main(
-            code.byteInputStream(),
-            PrintStream(out),
-            PrintStream(err),
-            arrayOf("--kotlinlang-style", "--enable-editorconfig", "-"),
-        )
+        code.byteInputStream(),
+        PrintStream(out),
+        PrintStream(err),
+        arrayOf("--kotlinlang-style", "--enable-editorconfig", "-"),
+    )
         .run()
 
     assertEquals(formatted, out.toString(UTF_8))
@@ -315,11 +315,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                code.byteInputStream(),
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--enable-editorconfig", "--stdin-name=$namedFile", "-"),
-            )
+            code.byteInputStream(),
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--enable-editorconfig", "--stdin-name=$namedFile", "-"),
+        )
             .run()
 
     assertEquals(0, exitCode)
@@ -363,22 +363,22 @@ class MainTest {
     val expected = """fun f() = println("hello, world")""" + "\n"
 
     Main(
-            """fun f (   ) =    println("hello, world")""".byteInputStream(),
-            PrintStream(out),
-            PrintStream(err),
-            arrayOf("-"),
-        )
+        """fun f (   ) =    println("hello, world")""".byteInputStream(),
+        PrintStream(out),
+        PrintStream(err),
+        arrayOf("-"),
+    )
         .run()
     assertEquals(expected, out.toString(UTF_8))
 
     out.reset()
 
     Main(
-            """fun f () = println("hello, world")""".byteInputStream(),
-            PrintStream(out),
-            PrintStream(err),
-            arrayOf("-"),
-        )
+        """fun f () = println("hello, world")""".byteInputStream(),
+        PrintStream(out),
+        PrintStream(err),
+        arrayOf("-"),
+    )
         .run()
     assertEquals(expected, out.toString(UTF_8))
   }
@@ -459,11 +459,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                emptyInput,
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--set-exit-if-changed", file.toString()),
-            )
+            emptyInput,
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--set-exit-if-changed", file.toString()),
+        )
             .run()
 
     assertEquals(1, exitCode)
@@ -475,11 +475,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                code.byteInputStream(),
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--set-exit-if-changed", "-"),
-            )
+            code.byteInputStream(),
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--set-exit-if-changed", "-"),
+        )
             .run()
 
     assertEquals(1, exitCode)
@@ -493,11 +493,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                emptyInput,
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--dry-run", "--set-exit-if-changed", file.toString()),
-            )
+            emptyInput,
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--dry-run", "--set-exit-if-changed", file.toString()),
+        )
             .run()
 
     assertEquals(code, file.readText())
@@ -511,11 +511,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                code.byteInputStream(),
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--dry-run", "--set-exit-if-changed", "-"),
-            )
+            code.byteInputStream(),
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--dry-run", "--set-exit-if-changed", "-"),
+        )
             .run()
 
     assertDoesNotContain(out.toString(UTF_8), "hello, world")
@@ -530,11 +530,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                code.byteInputStream(UTF_8),
-                PrintStream(out, true, testCharset),
-                PrintStream(err),
-                arrayOf("-"),
-            )
+            code.byteInputStream(UTF_8),
+            PrintStream(out, true, testCharset),
+            PrintStream(err),
+            arrayOf("-"),
+        )
             .run()
 
     assertEquals(0, exitCode)
@@ -549,11 +549,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                emptyInput,
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf(file.toString()),
-            )
+            emptyInput,
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf(file.toString()),
+        )
             .run()
 
     assertEquals(0, exitCode)
@@ -568,11 +568,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                emptyInput,
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf(file.toString()),
-            )
+            emptyInput,
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf(file.toString()),
+        )
             .run()
 
     assertEquals(0, exitCode)
@@ -583,11 +583,11 @@ class MainTest {
   fun `--help gives return code of 0`() {
     val exitCode =
         Main(
-                emptyInput,
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--help"),
-            )
+            emptyInput,
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--help"),
+        )
             .run()
 
     assertEquals(0, exitCode)
@@ -707,16 +707,16 @@ class MainTest {
 
     val exitCode =
         Main(
-                code.byteInputStream(),
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf(
-                    "--enable-editorconfig",
-                    "--stdin-name=$namedFile",
-                    "--lines=2",
-                    "-",
-                ),
-            )
+            code.byteInputStream(),
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf(
+                "--enable-editorconfig",
+                "--stdin-name=$namedFile",
+                "--lines=2",
+                "-",
+            ),
+        )
             .run()
 
     assertEquals(0, exitCode)
@@ -877,15 +877,15 @@ class MainTest {
 
     val exitCode =
         Main(
-                emptyInput,
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf(
-                    "--offset=${code.indexOf("selected")}",
-                    "--length=0",
-                    file.toString(),
-                ),
-            )
+            emptyInput,
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf(
+                "--offset=${code.indexOf("selected")}",
+                "--length=0",
+                file.toString(),
+            ),
+        )
             .run()
 
     assertEquals(0, exitCode)
@@ -918,11 +918,11 @@ class MainTest {
 
     val exitCode =
         Main(
-                code.byteInputStream(),
-                PrintStream(out),
-                PrintStream(err),
-                arrayOf("--offset=${code.indexOf("selected")}", "--length=0", "-"),
-            )
+            code.byteInputStream(),
+            PrintStream(out),
+            PrintStream(err),
+            arrayOf("--offset=${code.indexOf("selected")}", "--length=0", "-"),
+        )
             .run()
 
     assertEquals(0, exitCode)
