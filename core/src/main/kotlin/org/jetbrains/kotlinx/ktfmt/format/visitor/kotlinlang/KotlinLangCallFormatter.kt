@@ -26,6 +26,7 @@ import org.jetbrains.kotlinx.ktfmt.format.visitor.format
 import org.jetbrains.kotlinx.ktfmt.format.visitor.hugPoint
 import org.jetbrains.kotlinx.ktfmt.format.visitor.inImport
 import org.jetbrains.kotlinx.ktfmt.format.visitor.isBlockLikeCall
+import org.jetbrains.kotlinx.ktfmt.format.visitor.isBlockLikeCollectionLiteral
 import org.jetbrains.kotlinx.ktfmt.format.visitor.isChainedBlockLikeCall
 import org.jetbrains.kotlinx.ktfmt.format.visitor.isChainedScopingFunction
 import org.jetbrains.kotlinx.ktfmt.format.visitor.isMultilineScopingFunction
@@ -77,7 +78,7 @@ internal class KotlinLangCallFormatterImpl : CallFormatterImpl() {
           !chainedSelectorsHaveValueArguments(expression) -> {
         formatChainedScopingFunction(expression, emitLeadingBreak = false)
       }
-      expression.isChainedBlockLikeCall -> {
+      expression.isChainedBlockLikeCall || expression.chainRoot.isBlockLikeCollectionLiteral -> {
         formatChainedBlockLikeCall(expression, emitLeadingBreak = false)
       }
       else -> {

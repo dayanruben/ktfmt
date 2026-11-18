@@ -2,17 +2,20 @@ package org.jetbrains.kotlinx.ktfmt.format.visitor.kotlinlang
 
 import com.google.googlejavaformat.Doc
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtQualifiedExpression
 import org.jetbrains.kotlinx.ktfmt.format.visitor.ExpressionFormatterImpl
 import org.jetbrains.kotlinx.ktfmt.format.visitor.FormatterStateHolder
 import org.jetbrains.kotlinx.ktfmt.format.visitor.block
 import org.jetbrains.kotlinx.ktfmt.format.visitor.breakOp
 import org.jetbrains.kotlinx.ktfmt.format.visitor.builder
+import org.jetbrains.kotlinx.ktfmt.format.visitor.chainRoot
 import org.jetbrains.kotlinx.ktfmt.format.visitor.expressionBreakIndent
 import org.jetbrains.kotlinx.ktfmt.format.visitor.format
 import org.jetbrains.kotlinx.ktfmt.format.visitor.formatChainedBlockLikeCall
 import org.jetbrains.kotlinx.ktfmt.format.visitor.formatChainedScopingFunction
 import org.jetbrains.kotlinx.ktfmt.format.visitor.formatLambdaOrScopingFunction
 import org.jetbrains.kotlinx.ktfmt.format.visitor.isBlockLikeCall
+import org.jetbrains.kotlinx.ktfmt.format.visitor.isBlockLikeCollectionLiteral
 import org.jetbrains.kotlinx.ktfmt.format.visitor.isChainedBlockLikeCall
 import org.jetbrains.kotlinx.ktfmt.format.visitor.isChainedScopingFunction
 import org.jetbrains.kotlinx.ktfmt.format.visitor.isLambdaOrScopingFunction
@@ -32,10 +35,14 @@ internal class KotlinLangExpressionFormatterImpl : ExpressionFormatterImpl() {
       formatLambdaOrScopingFunction(initializer)
     } else if (initializer.isChainedScopingFunction) {
       formatChainedScopingFunction(initializer, emitLeadingBreak = true)
-    } else if (initializer.isBlockLikeCall) {
+    } else if (initializer.isBlockLikeCall || initializer.isBlockLikeCollectionLiteral) {
       builder.space()
       format(initializer)
-    } else if (initializer.isChainedBlockLikeCall) {
+    } else if (
+        initializer is KtQualifiedExpression &&
+            (initializer.isChainedBlockLikeCall ||
+                initializer.chainRoot.isBlockLikeCollectionLiteral)
+    ) {
       formatChainedBlockLikeCall(initializer, emitLeadingBreak = true)
     } else {
       builder.breakOp(Doc.FillMode.UNIFIED, " ", expressionBreakIndent)

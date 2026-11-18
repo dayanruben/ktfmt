@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.psi.KtBinaryExpression
 import org.jetbrains.kotlin.psi.KtBinaryExpressionWithTypeRHS
 import org.jetbrains.kotlin.psi.KtCallElement
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtLabeledExpression
 import org.jetbrains.kotlin.psi.KtLambdaArgument
@@ -94,6 +95,18 @@ val KtExpression?.isBlockLikeCall: Boolean
     return valueArgumentList.trailingComma != null ||
         valueArgumentList.arguments.any { it.isBlockLikeArgument }
   }
+
+/** Collection literals forced onto multiple lines can anchor a KotlinLang call chain. */
+internal val KtExpression.isBlockLikeCollectionLiteral: Boolean
+  get() =
+      this is KtCollectionLiteralExpression &&
+          getPrevSiblingIgnoringWhitespace() !is PsiComment &&
+          (trailingComma != null ||
+              getInnerExpressions().any {
+                it.isBlockLikeCall ||
+                    it.isChainedBlockLikeCall ||
+                    it.chainRoot.isBlockLikeCollectionLiteral
+              })
 
 val KtValueArgument.isBlockLikeArgument: Boolean
   get() {
