@@ -79,8 +79,8 @@ object Formatter {
    * @param characterRanges zero-indexed character ranges to format, using closed-open bounds
    *
    * When [characterRanges] are non-null, only pretty-print replacements are limited to those
-   * ranges. Whole-file cleanup passes, such as import cleanup and multiline string formatting,
-   * still run afterward, mirroring google-java-format's cleanup-after-selection behavior.
+   * ranges. Modifier ordering runs on the whole file before layout. Whole-file cleanup passes such
+   * as import cleanup and multiline string formatting still run afterward.
    */
   @JvmStatic
   @JvmOverloads
@@ -101,23 +101,23 @@ object Formatter {
               .transform { MultilineStringFormatter(options.continuationIndent).format(it) }
               .code
         } else {
+          // Sorting keeps the lengths of modifier lists stable, so character offsets outside
+          // a reordered list still address the same source.
+          val orderedCode = FormatterContext(code).transform { ModifierSorter.sort(it) }
           val partiallyFormattedCode =
               if (characterRanges.isEmpty) {
-                code
+                orderedCode
               } else {
-                FormatterContext(code)
-                    .transform {
-                      prettyPrint(
-                          it,
-                          options,
-                          lineSeparator = "\n",
-                          characterRanges = characterRanges.asRanges(),
-                      )
-                    }
-                    .code
+                orderedCode.transform {
+                  prettyPrint(
+                      it,
+                      options,
+                      lineSeparator = "\n",
+                      characterRanges = characterRanges.asRanges(),
+                  )
+                }
               }
-          FormatterContext(partiallyFormattedCode)
-              .transform { ModifierSorter.sort(it) }
+          partiallyFormattedCode
               .transform { dropRedundantElements(it, options) }
               .transform { sortedAndDistinctImports(it, trimLeadingWhitespace = true) }
               .transform { addRedundantElements(it, options) }
