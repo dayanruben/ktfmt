@@ -17,17 +17,8 @@ plugins {
   `kotlin-dsl`
 }
 
-dependencies { implementation(nativeImageLibs.graalvm.gradle.plugin) }
-
-gradlePlugin {
-  plugins {
-    register("ktfmt-file-generator") {
-      id = "ktfmt.ktfmt-file-generator"
-      implementationClass = "org.jetbrains.ktfmt.GenerateKtfmtFilePlugin"
-    }
-    register("native-image") {
-      id = "ktfmt.native-image"
-      implementationClass = "org.jetbrains.ktfmt.NativeImagePlugin"
-    }
-  }
+dependencies {
+  implementation(nativeImageLibs.graalvm.gradle.plugin)
+  implementation(nativeImageLibs.gradle.crypto.checksum.plugin)
+  implementation(libs.guava)
 }
