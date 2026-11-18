@@ -37,7 +37,9 @@ import org.gradle.process.ExecOperations
  * location-dependent ends up in the configuration cache entry.
  */
 abstract class NativeImageSmokeTestTask : DefaultTask() {
-  @get:InputFile @get:PathSensitive(PathSensitivity.NONE) abstract val binary: RegularFileProperty
+  @get:InputFile
+  @get:PathSensitive(PathSensitivity.NONE)
+  abstract val binary: RegularFileProperty
 
   @get:InputDirectory
   @get:PathSensitive(PathSensitivity.RELATIVE)
