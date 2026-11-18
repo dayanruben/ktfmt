@@ -106,7 +106,7 @@ object TrailingCommas {
       }
 
       suggestionElements.add(
-          list.insertionAnchor ?: list.items.last().leftLeafIgnoringCommentsAndWhitespace()
+          list.insertionAnchor ?: list.items.last().leftLeafIgnoringCommentsAndWhitespace(),
       )
     }
   }

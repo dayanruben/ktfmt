@@ -65,7 +65,7 @@ private constructor(
       val lastToken =
           checkNotNull(
               lastEnumEntry.lastChild.getPrevSiblingIgnoringWhitespaceAndComments(
-                  withItself = true
+                  withItself = true,
               ),
           )
       when (lastToken.text) {
