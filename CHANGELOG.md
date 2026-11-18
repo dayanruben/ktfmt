@@ -7,6 +7,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- Migrated to the google-java-format 2.0.0 layout engine (`LayoutBuilder` and `LayoutSolver`). ktfmt now requires Java 21 or newer. (https://github.com/Kotlin/ktfmt/pull/716)
+- The IntelliJ plugin now requires IntelliJ 2024.2 or newer, because ktfmt now requires Java 21. (https://github.com/Kotlin/ktfmt/pull/721)
+
+### Fixed
+
+- When a call chain ending in a trailing lambda doesn't fit on one line, it now breaks before each `.` instead of breaking before the lambda's `->` or inside the last call's arguments or type arguments. (https://github.com/Kotlin/ktfmt/issues/454, https://github.com/Kotlin/ktfmt/issues/220, https://github.com/Kotlin/ktfmt/issues/257)
+- KDoc: don't allow a line break right after a tag at the start of the line (https://github.com/Kotlin/ktfmt/issues/711)
+
+## [0.65]
+
 ### Added
 
 - Support partial formatting with `--lines`/`--line` and matching
@@ -21,7 +33,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/).
 ### Changed
 
 - Trailing comma is now added when a single parameter is formatted onto its own line (https://github.com/facebook/ktfmt/issues/461) 
-- Migrated from `com.facebook.ktfmt` package to `org.jetbrains.ktfmt`
+- Migrated from `com.facebook.ktfmt` package to `org.jetbrains.kotlinx.ktfmt`
 - Use the file's extension to differentiate between scripts and regular files in the parser
 
 ### Fixed
