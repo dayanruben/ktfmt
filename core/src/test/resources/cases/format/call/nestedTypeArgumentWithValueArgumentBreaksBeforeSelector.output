@@ -5,3 +5,17 @@ fun f() {
           .adapter
           .shouldBeTypeOf<ListAdapter<GroupieViewHolder>>(subject)
 }
+
+fun typeArgumentStillWraps() {
+  val adapter =
+      screenRobot.theRecyclerViewForTheVeryLongListWithExtraQualifier
+          .adapter
+          .shouldBeTypeOf<
+              ListAdapter<
+                  AnEspeciallyLongAndDescriptiveViewHolder,
+                  AnAlsoVeryLongBindingType,
+              >,
+          >(
+              subject,
+          )
+}
