@@ -132,6 +132,8 @@ public final class org/jetbrains/kotlinx/ktfmt/format/FormattingOptions {
 	public static final field DEFAULT_CONTINUATION_INDENT I
 	public static final field DEFAULT_MAX_WIDTH I
 	public fun <init> (IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZ)V
+	public synthetic fun <init> (IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZZZ)V
+	public synthetic fun <init> (IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZZZZ)V
 	public synthetic fun <init> (IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (IIIZZZ)V
@@ -144,7 +146,9 @@ public final class org/jetbrains/kotlinx/ktfmt/format/FormattingOptions {
 	public final fun component6 ()Z
 	public final fun component7 ()Z
 	public final fun component8 ()Z
+	public final synthetic fun copy (IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZZZ)Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;
 	public final fun copy (IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZZZZ)Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;
+	public static synthetic fun copy$default (Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZZZILjava/lang/Object;)Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;
 	public static synthetic fun copy$default (Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;IIILorg/jetbrains/kotlinx/ktfmt/format/TrailingCommaManagementStrategy;ZZZZZILjava/lang/Object;)Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBlockIndent ()I

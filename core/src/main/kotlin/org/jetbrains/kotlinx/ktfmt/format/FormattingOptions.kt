@@ -103,6 +103,28 @@ data class FormattingOptions(
     const val DEFAULT_CONTINUATION_INDENT: Int = 4
   }
 
+  @Deprecated("Retained for binary compatibility", level = DeprecationLevel.HIDDEN)
+  constructor(
+      maxWidth: Int,
+      blockIndent: Int,
+      continuationIndent: Int,
+      trailingCommaManagementStrategy: TrailingCommaManagementStrategy = COMPLETE,
+      removeUnusedImports: Boolean = true,
+      preserveLambdaBreaks: Boolean = true,
+      debuggingPrintOpsAfterFormatting: Boolean = false,
+      experimentalEngine: Boolean = false,
+  ) : this(
+      maxWidth = maxWidth,
+      blockIndent = blockIndent,
+      continuationIndent = continuationIndent,
+      trailingCommaManagementStrategy = trailingCommaManagementStrategy,
+      removeUnusedImports = removeUnusedImports,
+      preserveLambdaBreaks = preserveLambdaBreaks,
+      debuggingPrintOpsAfterFormatting = debuggingPrintOpsAfterFormatting,
+      useTabsForIndentation = false,
+      experimentalEngine = experimentalEngine,
+  )
+
   @Deprecated("Here just for retrocompatibility reasons. Will be removed on 1.0.0")
   constructor(
       maxWidth: Int,
@@ -142,6 +164,30 @@ data class FormattingOptions(
       preserveLambdaBreaks = false,
       debuggingPrintOpsAfterFormatting = debuggingPrintOpsAfterFormatting,
   )
+
+  @Deprecated("Retained for binary compatibility", level = DeprecationLevel.HIDDEN)
+  fun copy(
+      maxWidth: Int = this.maxWidth,
+      blockIndent: Int = this.blockIndent,
+      continuationIndent: Int = this.continuationIndent,
+      trailingCommaManagementStrategy: TrailingCommaManagementStrategy =
+          this.trailingCommaManagementStrategy,
+      removeUnusedImports: Boolean = this.removeUnusedImports,
+      preserveLambdaBreaks: Boolean = this.preserveLambdaBreaks,
+      debuggingPrintOpsAfterFormatting: Boolean = this.debuggingPrintOpsAfterFormatting,
+      experimentalEngine: Boolean = this.experimentalEngine,
+  ): FormattingOptions =
+      copy(
+          maxWidth = maxWidth,
+          blockIndent = blockIndent,
+          continuationIndent = continuationIndent,
+          trailingCommaManagementStrategy = trailingCommaManagementStrategy,
+          removeUnusedImports = removeUnusedImports,
+          preserveLambdaBreaks = preserveLambdaBreaks,
+          debuggingPrintOpsAfterFormatting = debuggingPrintOpsAfterFormatting,
+          useTabsForIndentation = useTabsForIndentation,
+          experimentalEngine = experimentalEngine,
+      )
 
   internal val manageTrailingCommas: Boolean
     get() = trailingCommaManagementStrategy != NONE
