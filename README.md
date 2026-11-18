@@ -193,8 +193,13 @@ Running `ktfmt` over a whole repository creates a large reformatting commit that
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
 
-GitHub and GitLab honor this file automatically in their blame views, and
-`git blame --ignore-revs-file=.git-blame-ignore-revs` works without any extra configuration.
+GitHub reads the file from the repository root for its blame view.
+[GitHub documentation](https://docs.github.com/en/repositories/working-with-files/using-files/viewing-and-understanding-files#ignore-commits-in-the-blame-view)
+
+In GitLab, enable **Ignore specific revisions** in the blame preferences.
+[GitLab documentation](https://docs.gitlab.com/user/project/repository/files/git_blame/#ignore-specific-revisions)
+
+You can also pass the file directly with `git blame --ignore-revs-file=.git-blame-ignore-revs`.
 This convention, supported via git's
 [`blame.ignoreRevsFile`](https://git-scm.com/docs/git-blame) option, is useful both when first
 adopting `ktfmt` and for any later backwards-incompatible formatting changes.
