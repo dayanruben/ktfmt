@@ -34,8 +34,11 @@ import org.jetbrains.kotlinx.ktfmt.format.visitor.Indentation.Companion.ZERO
  */
 interface ExpressionFormatter {
   /**
-   * Format the right-hand side of an initializer expression, i.e. the expression after `=`
-   * (inclusively)
+   * Format the right-hand side of an assignment-like expression:
+   * - property initializers
+   * - assignment operators
+   * - expression bodies
+   * - backing fields
    *
    * @param assignmentOp The symbol that separates the initializer from the expression, see
    *   [org.jetbrains.kotlin.lexer.KtTokens.ALL_ASSIGNMENTS]
@@ -177,7 +180,7 @@ internal open class ExpressionFormatterImpl : ExpressionFormatter {
   }
 
   context(_: FormatterStateHolder)
-  private fun formatBinaryOperationToken(expression: KtBinaryExpression, isFirst: Boolean = false) {
+  open fun formatBinaryOperationToken(expression: KtBinaryExpression, isFirst: Boolean = false) {
     when (expression.operationToken) {
       KtTokens.RANGE,
       KtTokens.RANGE_UNTIL -> {

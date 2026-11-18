@@ -1,5 +1,6 @@
 package org.jetbrains.kotlinx.ktfmt.format.visitor
 
+import com.google.googlejavaformat.Output.BreakTag
 import com.google.googlejavaformat.layout.LayoutBuilder
 import java.util.IdentityHashMap
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -37,6 +38,13 @@ class FormatterState(
   }
 
   /**
+   * Stores the break tag that denotes whether the line break was taken before the assignment
+   * expression
+   */
+  internal val assignmentBreaks: Map<KtExpression, BreakTag>
+    field = mutableMapOf<KtExpression, BreakTag>()
+
+  /**
    * markForPartialFormat is used to delineate the smallest areas of code that must be formatted
    * together.
    *
@@ -64,6 +72,15 @@ class FormatterState(
       body()
     } finally {
       inExpressionTracker.removeLast()
+    }
+  }
+
+  internal fun inAssignment(assignment: KtExpression, tag: BreakTag?, body: () -> Unit) {
+    tag?.let { assignmentBreaks[assignment] = tag }
+    try {
+      body()
+    } finally {
+      assignmentBreaks.remove(assignment)
     }
   }
 }

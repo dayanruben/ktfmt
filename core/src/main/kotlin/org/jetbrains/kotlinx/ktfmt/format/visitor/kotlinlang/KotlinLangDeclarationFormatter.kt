@@ -1,7 +1,11 @@
 package org.jetbrains.kotlinx.ktfmt.format.visitor.kotlinlang
 
 import com.google.googlejavaformat.Doc
+import com.google.googlejavaformat.layout.LayoutBuilder
 import org.jetbrains.kotlin.psi.KtBackingField
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtDelegatedSuperTypeEntry
+import org.jetbrains.kotlin.psi.KtDestructuringDeclaration
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtModifierList
 import org.jetbrains.kotlin.psi.KtPropertyAccessor
@@ -18,34 +22,88 @@ import org.jetbrains.kotlinx.ktfmt.format.visitor.blockIndent
 import org.jetbrains.kotlinx.ktfmt.format.visitor.breakOp
 import org.jetbrains.kotlinx.ktfmt.format.visitor.builder
 import org.jetbrains.kotlinx.ktfmt.format.visitor.expressionBreakIndent
+import org.jetbrains.kotlinx.ktfmt.format.visitor.forcedBreak
 import org.jetbrains.kotlinx.ktfmt.format.visitor.format
-import org.jetbrains.kotlinx.ktfmt.format.visitor.formatChainedBlockLikeCall
-import org.jetbrains.kotlinx.ktfmt.format.visitor.formatChainedScopingFunction
-import org.jetbrains.kotlinx.ktfmt.format.visitor.formatInitializerExpression
+import org.jetbrains.kotlinx.ktfmt.format.visitor.formatAssignmentLikeExpression
+import org.jetbrains.kotlinx.ktfmt.format.visitor.formatCommaSeparatedList
+import org.jetbrains.kotlinx.ktfmt.format.visitor.formatModifierList
+import org.jetbrains.kotlinx.ktfmt.format.visitor.formatSuperTypeList
 import org.jetbrains.kotlinx.ktfmt.format.visitor.formatTypeConstraintList
 import org.jetbrains.kotlinx.ktfmt.format.visitor.formatTypeParameterList
-import org.jetbrains.kotlinx.ktfmt.format.visitor.isBlockLikeCall
-import org.jetbrains.kotlinx.ktfmt.format.visitor.isChainedBlockLikeCall
-import org.jetbrains.kotlinx.ktfmt.format.visitor.isChainedScopingFunction
-import org.jetbrains.kotlinx.ktfmt.format.visitor.isLambdaOrScopingFunction
+import org.jetbrains.kotlinx.ktfmt.format.visitor.huggableBlock
+import org.jetbrains.kotlinx.ktfmt.format.visitor.isPrefixedByLineBreak
+import org.jetbrains.kotlinx.ktfmt.format.visitor.sync
 import org.jetbrains.kotlinx.ktfmt.format.visitor.token
 
 /**
  * Custom declaration formatter for KotlinLang style.
  *
- * [emitPropertyDeclaration] implements the behaviour introduced in #634 that is reverted in the
- * default style: don't force new line for block-like calls in property initializers.
+ * - Uses [KotlinLangExpressionFormatterImpl.formatInitializerExpression] to format **both**
+ *   property initializers and property delegates.
  *
- * ```
- * val x = foo(
- *     1,
- *     2,
- * )
- * ```
+ * - Uses [KotlinLangExpressionFormatterImpl.formatInitializerExpression] to format rhs of
+ *   destructuring declarations.
  *
- * See [KotlinLangCallFormatterImpl] for more details.
+ * - [formatClassOrObject] handles formatting of the supertype lists similar to how
+ *   [formatAssignmentLikeExpression] works. General rule: preserve user-defined breaks after the
+ *   `:` in the supertype list.
  */
 internal class KotlinLangDeclarationFormatterImpl : DeclarationFormatterImpl() {
+  context(_: FormatterStateHolder)
+  override fun formatClassOrObject(classOrObject: KtClassOrObject) {
+    builder.sync(classOrObject)
+    builder.block {
+      classOrObject.modifierList?.let { formatModifierList(it) }
+      classOrObject.getDeclarationKeyword()?.let { builder.token(it.text) }
+
+      classOrObject.nameIdentifier?.let { name ->
+        builder.space()
+        builder.token(name.text)
+        format(classOrObject.typeParameterList)
+      }
+      format(classOrObject.primaryConstructor)
+
+      var forceBreakBeforeTypeConstraints = false
+      classOrObject.getSuperTypeList()?.let { superTypes ->
+        forceBreakBeforeTypeConstraints =
+            superTypes.entries.lastOrNull() is KtDelegatedSuperTypeEntry
+        builder.space()
+        builder.block {
+          builder.token(":")
+          val hugPoint = if (superTypes.isPrefixedByLineBreak) null else LayoutBuilder.newHugPoint()
+          builder.huggableBlock(hugPoint, ZERO, ZERO) {
+            builder.breakOp(
+                flat = " ",
+                plusIndent = expressionBreakIndent,
+            )
+            builder.block(expressionBreakIndent) {
+              builder.fenceComments()
+              // Only the break after ':' is flattened when hugging. The list's comma breaks
+              // stay in a nested group, and the solver checks that its first rendered line fits.
+              if (hugPoint != null) builder.hugPoint(hugPoint)
+              formatSuperTypeList(superTypes)
+            }
+          }
+        }
+      }
+
+      classOrObject.typeConstraintList?.let { typeConstraintList ->
+        if (forceBreakBeforeTypeConstraints) {
+          builder.forcedBreak(expressionBreakIndent)
+        }
+        formatTypeConstraintList(typeConstraintList)
+      }
+
+      classOrObject.body?.let {
+        builder.space()
+        format(it)
+      }
+    }
+    if (classOrObject.nameIdentifier != null) {
+      builder.forcedBreak()
+    }
+  }
+
   context(_: FormatterStateHolder)
   override fun emitPropertyDeclaration(
       modifiers: KtModifierList?,
@@ -104,28 +162,10 @@ internal class KotlinLangDeclarationFormatterImpl : DeclarationFormatterImpl() {
       // for example `by lazy { compute() }`
       if (delegate != null) {
         builder.space()
-        builder.token("by")
-        val delegateExpr = delegate.expression
-        if (delegateExpr.isLambdaOrScopingFunction) {
-          builder.space()
-          format(delegate)
-        } else if (delegateExpr != null && delegateExpr.isChainedScopingFunction) {
-          formatChainedScopingFunction(delegateExpr, emitLeadingBreak = true)
-        } else if (delegateExpr.isBlockLikeCall) {
-          builder.space()
-          format(delegate)
-        } else if (delegateExpr != null && delegateExpr.isChainedBlockLikeCall) {
-          formatChainedBlockLikeCall(delegateExpr, emitLeadingBreak = true)
-        } else {
-          builder.breakOp(Doc.FillMode.UNIFIED, " ", expressionBreakIndent)
-          builder.block(expressionBreakIndent) {
-            builder.fenceComments()
-            format(delegate)
-          }
-        }
+        formatAssignmentLikeExpression(delegate.expression!!, "by")
       } else if (initializer != null) {
         builder.space()
-        formatInitializerExpression(initializer)
+        formatAssignmentLikeExpression(initializer)
       }
     }
     // for example `field = value`, `private set`, or `get = 2 * field`
@@ -158,7 +198,7 @@ internal class KotlinLangDeclarationFormatterImpl : DeclarationFormatterImpl() {
                     parameterList = component.parameterList,
                     typeConstraintList = null,
                     bodyExpression = component.bodyBlockExpression ?: component.bodyExpression,
-                    typeOrDelegationCall = component.returnTypeReference,
+                    typeOrDelegationCall = component.typeReference,
                 )
               }
             }
@@ -170,5 +210,39 @@ internal class KotlinLangDeclarationFormatterImpl : DeclarationFormatterImpl() {
     }
 
     builder.guessToken(";")
+  }
+
+  context(_: FormatterStateHolder)
+  override fun formatDestructuringDeclaration(
+      destructuringDeclaration: KtDestructuringDeclaration,
+  ) {
+    builder.sync(destructuringDeclaration)
+    val modifierList = destructuringDeclaration.modifierList
+    if (modifierList != null) {
+      formatModifierList(modifierList)
+      builder.forcedBreak()
+    }
+    val valOrVarKeyword = destructuringDeclaration.valOrVarKeyword
+    if (valOrVarKeyword != null) {
+      builder.token(valOrVarKeyword.text)
+      builder.space()
+    }
+    val hasTrailingComma = destructuringDeclaration.trailingComma != null
+    val openingDelimiter = destructuringDeclaration.lPar?.text
+    val closingDelimiter = destructuringDeclaration.rPar?.text
+    builder.block(expressionBreakIndent) {
+      formatCommaSeparatedList(
+          destructuringDeclaration.entries,
+          forceMultiline = hasTrailingComma,
+          prefix = openingDelimiter,
+          postfix = closingDelimiter,
+          breakBeforePostfix = false,
+      )
+    }
+    val initializer = destructuringDeclaration.initializer
+    if (initializer != null) {
+      builder.space()
+      formatAssignmentLikeExpression(initializer)
+    }
   }
 }

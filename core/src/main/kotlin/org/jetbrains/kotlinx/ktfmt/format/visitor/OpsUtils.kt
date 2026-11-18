@@ -51,12 +51,44 @@ internal fun LayoutBuilder.block(
   }
 }
 
+internal fun LayoutBuilder.huggableBlock(
+    hugPoint: LayoutBuilder.HugPoint?,
+    plusIndent: Indentation = ZERO,
+    huggedPlusIndent: Indentation = ZERO,
+    fallbackIfFlatOnNextLine: Boolean = false,
+    block: () -> Unit,
+) {
+  if (hugPoint != null) {
+    openHuggable(plusIndent.indent, huggedPlusIndent.indent, hugPoint, fallbackIfFlatOnNextLine)
+  }
+  block()
+  if (hugPoint != null) {
+    close()
+  }
+}
+
 internal fun LayoutBuilder.breakOp(
     fillMode: Doc.FillMode = Doc.FillMode.UNIFIED,
     flat: String = " ",
     plusIndent: Indentation = ZERO,
     optionalTag: Optional<Output.BreakTag> = Optional.empty(),
 ) = breakOp(fillMode, flat, plusIndent.indent, optionalTag)
+
+internal fun LayoutBuilder.breakOp(
+    breakAllowed: Boolean,
+    fillMode: Doc.FillMode = Doc.FillMode.UNIFIED,
+    flat: String = " ",
+    plusIndent: Indentation = ZERO,
+): Output.BreakTag? {
+  var breakTaken: Output.BreakTag? = null
+  if (breakAllowed) {
+    breakTaken = Output.BreakTag()
+    breakOp(fillMode, flat, plusIndent, Optional.of(breakTaken))
+  } else {
+    space()
+  }
+  return breakTaken
+}
 
 internal fun LayoutBuilder.open(plusIndent: Indentation) = open(plusIndent.indent)
 
