@@ -588,7 +588,7 @@ internal open class CallFormatterImpl : CallFormatter {
   }
 
   context(_: FormatterStateHolder)
-  fun formatArrayAccessBrackets(expression: KtArrayAccessExpression) {
+  open fun formatArrayAccessBrackets(expression: KtArrayAccessExpression) {
     builder.block(expressionBreakIndent) {
       formatCommaSeparatedList(
           expression.indexExpressions,
