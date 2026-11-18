@@ -13,3 +13,9 @@ class Foo {
             "the lazy dog while carrying a " +
             "very long string literal"
 }
+
+val names =
+    listOf("prefix") +
+        ("The quick brown fox jumps over " +
+            "the lazy dog while carrying a " +
+            "very long string literal")
