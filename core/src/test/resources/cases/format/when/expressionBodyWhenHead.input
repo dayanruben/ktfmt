@@ -10,3 +10,8 @@ fun foo() =
       0 -> "zero"
       else -> "other"
     }
+
+fun Int.longEnoughFunctionName() = when (this) {
+  0 -> "zero"
+  else -> "other"
+}
