@@ -1,0 +1,12 @@
+fun f() {
+  foo(reallyLongArgument, // A long comment that gets wrapped and then reformatted again after running ktfmt twice, what!!!!
+      anotherArgument)
+  foo(
+           x +  y, // A long comment that gets wrapped and then reformatted again after running ktfmt twice, what!!!!
+    z
+  )
+  foo(
+      x              + y, // A long comment that gets wrapped and then reformatted again after running ktfmt twice, what!!!!
+    z
+  )
+}
