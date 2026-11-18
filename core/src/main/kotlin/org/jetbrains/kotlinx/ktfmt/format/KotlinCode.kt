@@ -19,12 +19,11 @@ enum class FileType(val extension: String) {
 }
 
 val File.kotlinFileType: FileType
-  get() =
-      when (extension) {
-        FileType.REGULAR.extension -> FileType.REGULAR
-        FileType.SCRIPT.extension -> FileType.SCRIPT
-        else -> throw IllegalArgumentException("Unsupported file type: $extension")
-      }
+  get() = when (extension) {
+    FileType.REGULAR.extension -> FileType.REGULAR
+    FileType.SCRIPT.extension -> FileType.SCRIPT
+    else -> throw IllegalArgumentException("Unsupported file type: $extension")
+  }
 
 fun KotlinCode(file: File): KotlinCode = KotlinCode(file.inputStream(), file.kotlinFileType)
 

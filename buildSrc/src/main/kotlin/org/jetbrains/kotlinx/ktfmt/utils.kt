@@ -17,14 +17,13 @@ internal val Project.currentOs: Os
       }
 
 internal val Project.currentArch: Arch
-  get() =
-      when (val arch = providers.systemProperty("os.arch").get()) {
-        "aarch64",
-        "arm64" -> Arch.AARCH64
-        "x86_64",
-        "amd64" -> Arch.X64
-        else -> error("Unsupported native-image host architecture: $arch")
-      }
+  get() = when (val arch = providers.systemProperty("os.arch").get()) {
+    "aarch64",
+    "arm64" -> Arch.AARCH64
+    "x86_64",
+    "amd64" -> Arch.X64
+    else -> error("Unsupported native-image host architecture: $arch")
+  }
 
 internal enum class Os(val osName: String) {
   WINDOWS("windows"),

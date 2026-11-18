@@ -25,12 +25,11 @@ class CaseConfig(
     private val DIRECTIVES: Map<String, Directive> =
         listOf(
                 Directive("FILE_TYPE") {
-                  fileType =
-                      when (it) {
-                        "REGULAR" -> FileType.REGULAR
-                        "SCRIPT" -> FileType.SCRIPT
-                        else -> throw IllegalArgumentException("Unsupported file type: $it")
-                      }
+                  fileType = when (it) {
+                    "REGULAR" -> FileType.REGULAR
+                    "SCRIPT" -> FileType.SCRIPT
+                    else -> throw IllegalArgumentException("Unsupported file type: $it")
+                  }
                 },
                 Directive("MAX_WIDTH") { options.maxWidth(it.toInt()) },
                 Directive("BLOCK_INDENT") { options.blockIndent(it.toInt()) },

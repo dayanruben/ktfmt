@@ -132,13 +132,12 @@ val KtExpression.chainParts: List<KtExpression>
     var node: KtExpression? = this@chainParts
     while (node != null) {
       add(node)
-      node =
-          when (node) {
-            is KtQualifiedExpression -> node.receiverExpression
-            is KtArrayAccessExpression -> node.arrayExpression
-            is KtPostfixExpression -> node.baseExpression
-            else -> null
-          }
+      node = when (node) {
+        is KtQualifiedExpression -> node.receiverExpression
+        is KtArrayAccessExpression -> node.arrayExpression
+        is KtPostfixExpression -> node.baseExpression
+        else -> null
+      }
     }
   }
       .asReversed()

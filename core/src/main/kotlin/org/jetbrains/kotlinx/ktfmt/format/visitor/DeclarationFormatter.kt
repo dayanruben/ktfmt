@@ -309,14 +309,13 @@ internal open class DeclarationFormatterImpl : DeclarationFormatter {
 
       var prev: PsiElement? = null
       for (curr in members) {
-        val blankLineBetweenMembers =
-            when {
-              prev == null -> OpsBuilder.BlankLineWanted.PRESERVE
-              prev !is KtProperty -> OpsBuilder.BlankLineWanted.YES
-              prev.getter != null || prev.setter != null -> OpsBuilder.BlankLineWanted.YES
-              curr is KtProperty -> OpsBuilder.BlankLineWanted.PRESERVE
-              else -> OpsBuilder.BlankLineWanted.YES
-            }
+        val blankLineBetweenMembers = when {
+          prev == null -> OpsBuilder.BlankLineWanted.PRESERVE
+          prev !is KtProperty -> OpsBuilder.BlankLineWanted.YES
+          prev.getter != null || prev.setter != null -> OpsBuilder.BlankLineWanted.YES
+          curr is KtProperty -> OpsBuilder.BlankLineWanted.PRESERVE
+          else -> OpsBuilder.BlankLineWanted.YES
+        }
         builder.blankLineWanted(blankLineBetweenMembers)
 
         markForPartialFormat()

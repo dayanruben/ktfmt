@@ -854,33 +854,32 @@ class ParagraphListBuilder(
     for (paragraph in paragraphs) {
       paragraph.cleanup()
       val text = paragraph.text
-      paragraph.separate =
-          when {
-            prev == null -> false
-            paragraph.preformatted && prev.preformatted -> false
-            paragraph.table ->
-                paragraph.separate && (!prev.block || prev.text.isKDocTag() || prev.table)
-            paragraph.separator || prev.separator -> true
-            text.isLine(1) || prev.text.isLine(1) -> false
-            paragraph.separate -> true
-            // Don't separate kdoc tags, except for the first one
-            paragraph.doc -> !prev.doc
-            text.isDirectiveMarker() -> false
-            text.isTodo() && !prev.text.isTodo() -> true
-            text.isHeader() -> true
-            // Set preformatted paragraphs off (but not <pre> tags where it's implicit)
-            paragraph.preformatted ->
-                !prev.preformatted &&
-                    !text.startsWith("<pre", true) &&
-                    (!text.trimStart().startsWith("```") || !prev.text.isExpectingMore())
-            prev.preformatted && prev.text.startsWith("</pre>", true) -> false
-            paragraph.continuation -> true
-            paragraph.hanging -> false
-            paragraph.quoted > 0 -> prev.quoted > 0 && paragraph.quoted == prev.quoted
-            text.isHeader() -> true
-            text.startsWith("<p>", true) || text.startsWith("<p/>", true) -> true
-            else -> !paragraph.block && !paragraph.isEmpty()
-          }
+      paragraph.separate = when {
+        prev == null -> false
+        paragraph.preformatted && prev.preformatted -> false
+        paragraph.table ->
+            paragraph.separate && (!prev.block || prev.text.isKDocTag() || prev.table)
+        paragraph.separator || prev.separator -> true
+        text.isLine(1) || prev.text.isLine(1) -> false
+        paragraph.separate -> true
+        // Don't separate kdoc tags, except for the first one
+        paragraph.doc -> !prev.doc
+        text.isDirectiveMarker() -> false
+        text.isTodo() && !prev.text.isTodo() -> true
+        text.isHeader() -> true
+        // Set preformatted paragraphs off (but not <pre> tags where it's implicit)
+        paragraph.preformatted ->
+            !prev.preformatted &&
+                !text.startsWith("<pre", true) &&
+                (!text.trimStart().startsWith("```") || !prev.text.isExpectingMore())
+        prev.preformatted && prev.text.startsWith("</pre>", true) -> false
+        paragraph.continuation -> true
+        paragraph.hanging -> false
+        paragraph.quoted > 0 -> prev.quoted > 0 && paragraph.quoted == prev.quoted
+        text.isHeader() -> true
+        text.startsWith("<p>", true) || text.startsWith("<p/>", true) -> true
+        else -> !paragraph.block && !paragraph.isEmpty()
+      }
 
       if (paragraph.hanging) {
         if (paragraph.doc || text.startsWith("<li>", true) || text.isTodo()) {

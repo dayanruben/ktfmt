@@ -58,11 +58,10 @@ sealed class Indentation {
           condition: Output.BreakTag?,
           thenIndent: Indentation,
           elseIndent: Indentation,
-      ): Indentation =
-          when {
-            condition == null -> elseIndent
-            else -> If(condition, thenIndent, elseIndent)
-          }
+      ): Indentation = when {
+        condition == null -> elseIndent
+        else -> If(condition, thenIndent, elseIndent)
+      }
     }
   }
 

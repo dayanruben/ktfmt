@@ -29,14 +29,13 @@ val ktfmtCliClasspath =
 
 dependencies { ktfmtCliDependencies(project(":ktfmt")) }
 
-val ktfmtFiles =
-    fileTree(rootDir) {
-      include("**/*.kt")
-      include("**/*.kts")
-      exclude("**/build/**")
-      exclude("**/.gradle/**")
-      exclude("**/.intellijPlatform/**")
-    }
+val ktfmtFiles = fileTree(rootDir) {
+  include("**/*.kt")
+  include("**/*.kts")
+  exclude("**/build/**")
+  exclude("**/.gradle/**")
+  exclude("**/.intellijPlatform/**")
+}
 
 fun JavaExec.configureKtfmtRun(files: FileCollection, check: Boolean) {
   mainClass = "org.jetbrains.kotlinx.ktfmt.cli.Main"
