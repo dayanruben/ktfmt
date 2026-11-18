@@ -83,7 +83,8 @@ cleanup-after-selection behavior.
 `--kotlinlang-style` makes `ktfmt` use a block indent of 4 spaces instead of 2.
 See below for details.
 
-`--use-tabs-for-indentation` makes `ktfmt` emit leading indentation with tabs instead of spaces.
+`--use-tabs-for-indentation` makes `ktfmt` emit leading indentation with tabs, using the block
+indent as the tab width.
 
 `--enable-editorconfig` makes `ktfmt` enable limited support to override the style's configuration based on the
 following subset of editorconfig properties:
@@ -201,10 +202,6 @@ Choose "Open as a Project".
 
 * Run `./gradlew :ktfmt:shadowJar`
 * Run `java -jar core/build/libs/ktfmt-<VERSION>-with-dependencies.jar`
-
-### Releasing
-
-See [RELEASING.md](RELEASING.md).
 
 ## License
 
