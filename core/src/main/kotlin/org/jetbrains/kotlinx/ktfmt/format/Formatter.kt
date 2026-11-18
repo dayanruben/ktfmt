@@ -252,7 +252,7 @@ object Formatter {
                       leadingComments =
                           duplicateImports.flatMap(ImportBlock::leadingComments).distinctBy {
                             it.startOffset
-                          }
+                          },
                   )
             }
     val importsWithComments =
