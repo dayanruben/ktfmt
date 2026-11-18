@@ -42,8 +42,8 @@ import org.jetbrains.kotlinx.ktfmt.format.visitor.trailingLambdaExpression
  *
  * - Overrides formatting of qualified expressions. Removes custom handling of chained calls and
  *   routes them all through [emitQualifiedExpression]. Together with the changes in
- *   [KotlinLangExpressionFormatterImpl.formatInitializerExpression] handles formatting of
- *   qualified expressions in assignment-like expressions allowing to preserve user-defined input.
+ *   [KotlinLangExpressionFormatterImpl.formatInitializerExpression] handles formatting of qualified
+ *   expressions in assignment-like expressions allowing to preserve user-defined input.
  *
  * - Does not allow breaks before `->` in lambda expressions
  *
