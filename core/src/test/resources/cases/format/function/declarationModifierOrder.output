@@ -1,0 +1,13 @@
+abstract class Base {
+  protected abstract suspend fun execute()
+}
+
+@First
+@Second
+public final class Subject : Base() {
+  protected override suspend fun execute() {}
+
+  lateinit /* describes lateinit */  protected var name: String
+}
+
+internal inline fun <reified T> use(noinline callback: (T) -> Unit) {}
