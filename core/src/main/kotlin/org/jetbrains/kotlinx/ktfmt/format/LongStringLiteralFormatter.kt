@@ -57,12 +57,15 @@ internal class LongStringLiteralFormatter(
                 LongStringLiteralReplacement(
                     startOffset = expression.startOffset,
                     endOffset = expression.endOffset,
-                    // Keep concatenation grouped with the original operand of an overloaded operator.
-                    text = if (expression.parent is KtBinaryExpression) "($replacement)" else replacement,
-                )
+                    // Keep concatenation grouped with the original operand of an overloaded
+                    // operator.
+                    text =
+                        if (expression.parent is KtBinaryExpression) "($replacement)"
+                        else replacement,
+                ),
             )
           }
-        }
+        },
     )
     return replacements
   }
