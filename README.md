@@ -43,6 +43,15 @@ To enable it by default in new projects, use
 When enabled, it will replace the normal `Reformat Code` action, which can be triggered from the
 `Code` menu or with the Ctrl-Alt-L (by default) keyboard shortcut.
 
+To override selected options in the plugin without switching to a custom style, select a preset
+in ktfmt Settings and check **Use .editorconfig overrides**. Commit the project's
+`.editorconfig` to share the overrides. For example, this leaves the rest of the preset in place:
+
+```ini
+[*.{kt,kts}]
+max_line_length = 80
+```
+
 To configure IntelliJ to approximate ktfmt's formatting rules during code editing, you can edit your
 project's
 [`.editorconfig` file](https://www.jetbrains.com/help/idea/configuring-code-style.html#editorconfig)

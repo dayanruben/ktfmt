@@ -74,6 +74,12 @@ class KtfmtConfigurable(project: Project) :
               .component
     }
 
+    row {
+      checkBox("Use .editorconfig overrides")
+          .bindSelected(settings::useEditorConfig)
+          .enabledIf(enabledCheckbox.selected)
+    }
+
     group("Custom style") {
           lateinit var maxLineLength: JTextField
           row("Max line length:") {

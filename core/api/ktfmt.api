@@ -4,6 +4,7 @@ public abstract interface annotation class org/jetbrains/kotlinx/ktfmt/annotatio
 public final class org/jetbrains/kotlinx/ktfmt/cli/EditorConfigResolver {
 	public static final field INSTANCE Lorg/jetbrains/kotlinx/ktfmt/cli/EditorConfigResolver;
 	public final fun resolveFormattingOptions (Ljava/io/File;Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;)Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;
+	public final fun resolveFormattingOptions (Ljava/io/File;Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;Z)Lorg/jetbrains/kotlinx/ktfmt/format/FormattingOptions;
 }
 
 public final class org/jetbrains/kotlinx/ktfmt/cli/Main {

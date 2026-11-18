@@ -97,6 +97,12 @@ internal class KtfmtSettings(private val project: Project) :
       state.customPreserveLambdaBreaks = preserveLambdaBreaks
     }
 
+  var useEditorConfig: Boolean
+    get() = state.useEditorConfig
+    set(value) {
+      state.useEditorConfig = value
+    }
+
   var isEnabled: Boolean
     get() = state.enableKtfmt == Enabled
     set(enabled) {
@@ -150,6 +156,7 @@ internal class KtfmtSettings(private val project: Project) :
 
     var enableKtfmt: EnabledState by enum(Unknown)
     var uiFormatterStyle: UiFormatterStyle by enum(Meta)
+    var useEditorConfig: Boolean by property(false)
 
     var customMaxLineLength: Int by property(Formatter.META_FORMAT.maxWidth)
     var customBlockIndent: Int by property(Formatter.META_FORMAT.blockIndent)

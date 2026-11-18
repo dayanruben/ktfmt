@@ -69,17 +69,16 @@ object EditorConfigResolver {
           TrailingCommaManagementStrategy.entries.map { it.name.lowercase() }.toSet(),
       )
 
-  private val propertyTypeRegistry by
-      lazy(LazyThreadSafetyMode.NONE) {
-        PropertyTypeRegistry.builder()
-            .defaults()
-            .type(PropertyType.max_line_length) // missing from defaults?
-            .type(ijKotlinIndentSize)
-            .type(ijContinuationIndentSize)
-            .type(ijKotlinContinuationIndentSize)
-            .type(commaManagementStrategy)
-            .build()
-      }
+  private val propertyTypeRegistry by lazy {
+    PropertyTypeRegistry.builder()
+        .defaults()
+        .type(PropertyType.max_line_length) // missing from defaults?
+        .type(ijKotlinIndentSize)
+        .type(ijContinuationIndentSize)
+        .type(ijKotlinContinuationIndentSize)
+        .type(commaManagementStrategy)
+        .build()
+  }
 
   private object Cache : org.ec4j.core.Cache {
     val cached = ConcurrentHashMap<Resource, EditorConfig>()
@@ -90,16 +89,26 @@ object EditorConfigResolver {
     ): EditorConfig = cached.computeIfAbsent(editorConfigFile, loader::load)
   }
 
-  private val resourcePropertiesService: ResourcePropertiesService by
-      lazy(LazyThreadSafetyMode.NONE) {
-        ResourcePropertiesService.builder()
-            .cache(Cache)
-            .loader(EditorConfigLoader.of(CURRENT, propertyTypeRegistry))
-            .build()
-      }
+  private val loader by lazy { EditorConfigLoader.of(CURRENT, propertyTypeRegistry) }
+
+  private val resourcePropertiesService: ResourcePropertiesService by lazy {
+    ResourcePropertiesService.builder().cache(Cache).loader(loader).build()
+  }
+
+  private val uncachedResourcePropertiesService: ResourcePropertiesService by lazy {
+    ResourcePropertiesService.builder().loader(loader).build()
+  }
 
   fun resolveFormattingOptions(file: File, baseOptions: FormattingOptions): FormattingOptions =
-      resourcePropertiesService
+      resolveFormattingOptions(file, baseOptions, useCache = true)
+
+  /** Pass `useCache = false` to re-read configuration in long-running applications. */
+  fun resolveFormattingOptions(
+      file: File,
+      baseOptions: FormattingOptions,
+      useCache: Boolean,
+  ): FormattingOptions =
+      (if (useCache) resourcePropertiesService else uncachedResourcePropertiesService)
           .queryProperties(Resource.Resources.ofPath(file.toPath().absolute(), Charsets.UTF_8))
           .resolveFormattingOptions(baseOptions)
 

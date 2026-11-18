@@ -87,6 +87,23 @@ class EditorConfigResolverTest {
   }
 
   @Test
+  fun `uncached lookup re-reads edited config and retains untouched preset options`() {
+    val conf = root.resolve(".editorconfig")
+    val file = root.resolve("src/Example.kt")
+    val preset = Formatter.META_FORMAT
+    conf.writeText("root = true\n[*.kt]\nmax_line_length = 80\n", UTF_8)
+    assertEquals(
+        preset.copy(maxWidth = 80),
+        EditorConfigResolver.resolveFormattingOptions(file, preset, useCache = false),
+    )
+    conf.writeText("root = true\n[*.kt]\nmax_line_length = 120\n", UTF_8)
+    assertEquals(
+        preset.copy(maxWidth = 120),
+        EditorConfigResolver.resolveFormattingOptions(file, preset, useCache = false),
+    )
+  }
+
+  @Test
   fun `doesn't override maxWidth based when editorconfig max_line_length = off`() {
     val conf = root.resolve(".editorconfig")
     conf.writeText(

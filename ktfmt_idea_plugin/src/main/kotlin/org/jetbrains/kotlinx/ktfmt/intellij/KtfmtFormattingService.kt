@@ -25,7 +25,9 @@ import com.intellij.formatting.service.AsyncFormattingRequest
 import com.intellij.formatting.service.FormattingService.Feature
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import java.io.IOException
 import org.jetbrains.kotlin.idea.KotlinFileType
+import org.jetbrains.kotlinx.ktfmt.cli.EditorConfigResolver
 import org.jetbrains.kotlinx.ktfmt.format.FileType
 import org.jetbrains.kotlinx.ktfmt.format.Formatter.format
 import org.jetbrains.kotlinx.ktfmt.format.FormattingOptions
@@ -48,7 +50,7 @@ class KtfmtFormattingService : AsyncDocumentFormattingService() {
         } else {
           UiFormatterStyle.getStandardFormattingOptions(style)
         }
-    return KtfmtFormattingTask(request, formattingOptions)
+    return KtfmtFormattingTask(request, formattingOptions, settings.useEditorConfig)
   }
 
   override fun getNotificationGroupId(): String = PARSING_ERROR_NOTIFICATION_GROUP
@@ -63,11 +65,19 @@ class KtfmtFormattingService : AsyncDocumentFormattingService() {
 
   private class KtfmtFormattingTask(
       private val request: AsyncFormattingRequest,
-      private val formattingOptions: FormattingOptions,
+      private val baseOptions: FormattingOptions,
+      private val useEditorConfig: Boolean,
   ) : FormattingTask {
     override fun run() {
       try {
-        val fileType = request.ioFile?.kotlinFileType ?: FileType.SCRIPT
+        val file = request.ioFile
+        val fileType = file?.kotlinFileType ?: FileType.SCRIPT
+        val formattingOptions =
+            if (useEditorConfig && file != null) {
+              EditorConfigResolver.resolveFormattingOptions(file, baseOptions, useCache = false)
+            } else {
+              baseOptions
+            }
         val formattedText =
             if (request.isWholeFileFormatting()) {
               format(formattingOptions, KotlinCode(request.documentText, fileType))
@@ -79,6 +89,8 @@ class KtfmtFormattingService : AsyncDocumentFormattingService() {
               )
             }
         request.onTextReady(formattedText)
+      } catch (e: IOException) {
+        request.onError("ktfmt configuration error", "Could not read .editorconfig. ${e.message}")
       } catch (e: FormatterException) {
         request.onError(
             PARSING_ERROR_TITLE,
