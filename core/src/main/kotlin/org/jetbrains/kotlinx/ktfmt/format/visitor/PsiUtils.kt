@@ -63,7 +63,7 @@ private fun onlyEmptyParenthesis(left: PsiElement?, right: PsiElement?): Boolean
     left != null && right != null && left.getNextSiblingIgnoringWhitespace() == right
 
 /**
- * [CallFormatter.emitQualifiedExpression] formats call expressions that are either part of a
+ * [CallFormatterImpl.emitQualifiedExpression] formats call expressions that are either part of a
  * qualified expression, or standing alone. This method makes it easier to handle both cases
  * uniformly.
  */
@@ -248,9 +248,10 @@ internal val PsiElement.hasTrailingComment: Boolean
 val KtExpression?.isLambdaOrScopingFunction: Boolean
   get() {
     if (this == null) return false
-    val comment = this.getPrevSiblingIgnoringWhiteSpace<PsiComment>()
-    // Leading line comments cause weird indentation; block comments are ok.
-    if (comment != null && comment.text.startsWith("//")) return false
+    if (isPrefixedByLineComment) return false
+    //    val comment = this.getPrevSiblingIgnoringWhiteSpace<PsiComment>()
+    //    // Leading line comments cause weird indentation; block comments are ok.
+    //    if (comment != null && comment.text.startsWith("//")) return false
 
     return this.scopingLambda != null
   }
@@ -403,4 +404,10 @@ internal val PsiElement.isPrefixedByLineBreak: Boolean
       prev = prev.prevSibling
     }
     return false
+  }
+
+internal val PsiElement.isPrefixedByLineComment: Boolean
+  get() {
+    val comment = getPrevSiblingIgnoringWhiteSpace<PsiComment>()
+    return (comment != null && comment.text.startsWith("//"))
   }
